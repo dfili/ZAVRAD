@@ -1,10 +1,11 @@
-FROM node:10.15-alpine
+FROM node:16.10-alpine
 
 WORKDIR /client
 
 COPY package.json ./
 
-RUN apk add yarn
+RUN corepack enable
+RUN yarn init -2
 RUN yarn install
 RUN yarn global add serve
 
