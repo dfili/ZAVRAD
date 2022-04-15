@@ -148,5 +148,7 @@ class App extends Component {
             </div>
         );
     }
+    //novi_plan
+    //export je vjv u toolbaru
  }
  export default App;

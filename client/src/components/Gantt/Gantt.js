@@ -1,10 +1,10 @@
 import React, { Component } from 'react';
 import { gantt } from 'dhtmlx-gantt';
 import 'dhtmlx-gantt/codebase/dhtmlxgantt.css';
-import $ from "jquery";
-import jsonTimestamp from '../../static/config.json';
-import jsonAction from '../../static/action.json';
-import jsonStateLevelScenario from '../../static/state_level_scenario.json';
+//import $ from "jquery";
+//import jsonTimestamp from '../../static/config.json';
+//import jsonAction from '../../static/action.json';
+//import jsonStateLevelScenario from '../../static/state_level_scenario.json';
 
 export default class Gantt extends Component {
     constructor(props){

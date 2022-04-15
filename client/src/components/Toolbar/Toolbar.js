@@ -3,6 +3,7 @@ import RaisedButton from 'material-ui/RaisedButton';
 import MuiThemeProvider from 'material-ui/styles/MuiThemeProvider';
 import axios, { post } from 'axios';
 import { gantt } from 'dhtmlx-gantt';
+import Export from '../ExportDialog/export';
 
 export default class Toolbar extends Component {
     handleZoomChange = (e) => {
@@ -25,7 +26,7 @@ export default class Toolbar extends Component {
     }
 
     clearPlan(){
-        console.log("Will trigger props method for plan calculation.");
+        console.log("Will clear current plan.");
         if (this.props.onClearPlan){
             this.props.onClearPlan()
         }
@@ -49,6 +50,10 @@ export default class Toolbar extends Component {
                 this.props.onProjectImport();
             }
         }
+    }
+    openExportDialog = async (e)=>{
+        console.log("Opening export dialog");
+        Export.render();
     }
 
     async onChangeFile(event) {
@@ -94,7 +99,7 @@ export default class Toolbar extends Component {
             reader.readAsText(file);
         });
     }
-
+    // async onClearPlan(event) {}
     render() {
         const zoomRadios = ['Hours', 'Days', 'Months'].map((value) => {
             const isActive = this.props.zoom === value;
@@ -148,14 +153,13 @@ export default class Toolbar extends Component {
                             primary={false}
                             onClick={()=>{this.upload.click()}}
                         />
+
                     </MuiThemeProvider>
-                    <div className="dropdown-menu" style={{width: '100%' }}>
-                        <button className="button-right" onClick={() => gantt.exportToPNG({raw:true})}>PNG</button>
-                        <button className="button-right" onClick={() => gantt.exportToPDF({raw:true})}>PDF</button>
-                        <button className="button-right" onClick={() => gantt.exportToExcel({raw:true})}>Excel</button>
-                        <button className="button-right" onClick={() => gantt.exportToICal({raw:true})}>iCal</button>
-                        <button className="button-right" onClick={() => gantt.exportToJSON({raw:true})}>JSON</button>
-                    </div>
+                    <MuiThemeProvider>
+                    <button className="button-left" onClick={() => this.openExportDialog()}>
+                        Export as:
+                    </button>
+                    </MuiThemeProvider>
                 </div>
             </div>
         );
