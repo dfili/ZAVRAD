@@ -1,8 +1,8 @@
 .zoom-bar {
   background: #ededed;
-  height: 40px;
+  height: 80px;
   line-height: 40px;
-  padding: 5px 10px;
+  padding: 5px 10px 10px 10px;
   visibility: visible;
   width: 100%;
 }
@@ -46,7 +46,6 @@
     text-decoration: none;
     margin-left: 6px;
     margin-right: 6px;
-    display: inline-block;
     font-size: 16px;
 }
 
@@ -61,7 +60,6 @@
     margin-left: 6px;
     margin-right: 6px;
     margin-top: 7px;
-    display: inline-block;
     font-size: 12px;
 }
 
@@ -71,6 +69,12 @@
     border: none;
     text-decoration: none;
     text-align: center;
-    display: inline-block;
     font-size: 12px;
+}
+.export-dropdown{
+  float: right;
+  background-color: #a0a0a0;
+  color: black;
+  text-align: center;
+  font-size: 14px;
 }

@@ -1,11 +1,4 @@
 .gantt-container {
   height: calc(100vh - 50px - 200px);
-  margin-top: 25px;
   width: 100%;
-}
-
-.dropdown-menu > a {
-  text-align: center;
-  display: inline-block;
-  float: right;
 }

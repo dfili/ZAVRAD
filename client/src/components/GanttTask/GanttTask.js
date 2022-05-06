@@ -11,14 +11,14 @@ export default class GanttTask extends Component {
             <div className="modal-dialog modal-dialog-centered" role="document">
                 <div className="modal-content">
                     <div className="modal-header">
-                        <h5 className="modal-title" id="exampleModalLabel">Task editor</h5>
+                        <h5 className="modal-title" id="exampleModalLabel">Action editor</h5>
                         <button type="button" className="close" data-dismiss="modal" aria-label="Close">
                             <span aria-hidden="true">&times;</span>
                         </button>
                     </div>
                     <div className="modal-body">
                         <div className="form-group">
-                            <label htmlFor="exampleInputEmail1">Task name</label>
+                            <label htmlFor="exampleInputEmail1">Action name</label>
                             <input className="form-control" name="description"></input>
                         </div>
                         <label>Holder</label>
