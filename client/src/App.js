@@ -1,6 +1,7 @@
 import React, { Component } from 'react';
 import Gantt from './components/Gantt';
 import Toolbar from './components/Toolbar';
+import ResourceView from './components/ResourceView';
 import './App.css';
 
 class App extends Component {
@@ -144,6 +145,9 @@ class App extends Component {
                         planCleared={planCleared}
                         projectImported={projectImported}
                     />
+                </div>
+                <div className="resource-container" style={{ width: '100%', height: '100%' }}>
+                    <ResourceView/>
                 </div>
             </div>
         );

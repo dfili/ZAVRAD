@@ -5,6 +5,7 @@ WORKDIR /client
 COPY package.json ./
 
 RUN corepack enable
+
 RUN yarn init -2
 RUN yarn
 RUN yarn global add serve

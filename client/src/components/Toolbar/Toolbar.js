@@ -1,4 +1,4 @@
-import React, { Component, useState } from "react";
+import React, { Component } from "react";
 import { post } from "axios";
 import Button from "@material-ui/core/Button";
 import Export from "../ExportDialog/Export";
@@ -48,11 +48,6 @@ export default class Toolbar extends Component {
         this.props.onProjectImport();
       }
     }
-  };
-
-  async getDialogueState() {
-    const [is_open, setOpen] = useState(false); //current state and function to update state
-    return is_open, setOpen
   };
 
   async onChangeFile(event) {
@@ -173,11 +168,8 @@ export default class Toolbar extends Component {
           >
             Import project
           </Button>
-          
-          <Export 
-            is_open={this.getDialogueState()[0]}
-            setOpen={this.getDialogueState()[1]}
-            ></Export>
+
+          <Export />
         </div>
       </div>
     );
