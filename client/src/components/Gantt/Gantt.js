@@ -202,7 +202,11 @@ export default class Gantt extends Component {
                     style={{ width: '100%', height: '100%' }}
                 >
                 </div>
+<<<<<<< HEAD
             </div>
+=======
+            </div>          
+>>>>>>> c5d3b557 (dockerfileovi i yml redone)
         );
     }
 }

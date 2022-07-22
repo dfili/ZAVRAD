@@ -1,19 +1,18 @@
-import time
 from flask import Flask, jsonify, request, make_response
-from flask_cors import cross_origin
+from flask_cors import cross_origin, CORS
 from pymongo import MongoClient
 from bson import json_util
-from flask_cors import CORS
 from datetime import datetime, timedelta
 import random
 import threading
+import time
 
 
 app = Flask(__name__)
 client = MongoClient('mongo', 27017)
 db = client.db
 CORS(app)
-
+app.config['DEBUG'] = True
 app.config['CORS_HEADERS'] = 'Content-Type'
 sem = threading.Semaphore()
 
@@ -24,8 +23,8 @@ sem = threading.Semaphore()
 @cross_origin()
 def root():
     db.hits.insert_one({ 'time': datetime.utcnow() })
-    message = 'This page has been visited {} times.'.format(db.hits.count())
-    return jsonify({ 'message': message })
+    #message = 'This page has been visited {} times.'.format(db.hits.count())
+    return jsonify({ 'message': 'This page has been visited {} times.'.format(db.hits.count()) })
 
 
 @app.route('/gantt/plan', methods=['GET'])

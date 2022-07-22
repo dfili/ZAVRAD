@@ -3,6 +3,10 @@ import Gantt from './components/Gantt';
 import Toolbar from './components/Toolbar';
 import ResourceView from './components/ResourceView';
 import './App.css';
+<<<<<<< HEAD
+=======
+import { Grid } from '@material-ui/core';
+>>>>>>> c5d3b557 (dockerfileovi i yml redone)
 
 class App extends Component {
       constructor(props){
@@ -17,7 +21,12 @@ class App extends Component {
             planUpdated: false,
             isClearingPlan: false,
             planCleared: false,
+<<<<<<< HEAD
             projectImported: false
+=======
+            projectImported: false, 
+            resourcesGathered: []
+>>>>>>> c5d3b557 (dockerfileovi i yml redone)
         }
         this.getGanttActions = this.getGanttActions.bind(this);
         this.calculatePlan = this.calculatePlan.bind(this);
@@ -123,6 +132,10 @@ class App extends Component {
         var planSuccessful = this.state.planSuccessful;
         var planCleared = this.state.planCleared;
         var projectImported = this.state.projectImported;
+<<<<<<< HEAD
+=======
+        var resourcesGathered = this.state.resourcesGathered;
+>>>>>>> c5d3b557 (dockerfileovi i yml redone)
         console.log("Gantt actions: ", ganttActions);
         return (
             <div className="app-container">
@@ -136,7 +149,12 @@ class App extends Component {
                         onProjectImport={this.handleProjectImport}
                     />
                 </div>
+<<<<<<< HEAD
                 <div className="gantt-container" style={{ width: '100%', height: '100%' }}>
+=======
+                <Grid container justifyContent='flex-end' direction='row' width='100%' height= '100%'>
+                <Grid item xs={9} className="gantt-container">
+>>>>>>> c5d3b557 (dockerfileovi i yml redone)
                     <Gantt
                         zoom={currentZoom}
                         actions={ganttActions}
@@ -145,6 +163,7 @@ class App extends Component {
                         planCleared={planCleared}
                         projectImported={projectImported}
                     />
+<<<<<<< HEAD
                 </div>
                 <div className="resource-container" style={{ width: '100%', height: '100%' }}>
                     <ResourceView/>
@@ -154,5 +173,17 @@ class App extends Component {
     }
     //novi_plan
     //export je vjv u toolbaru
+=======
+                </Grid>
+                <Grid item xs={3} className="resource-container">
+                    <ResourceView
+                    resources={resourcesGathered}
+                    />
+                </Grid>
+                </Grid>
+            </div>
+        );
+    }
+>>>>>>> c5d3b557 (dockerfileovi i yml redone)
  }
  export default App;

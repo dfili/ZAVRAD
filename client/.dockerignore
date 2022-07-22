@@ -1,6 +1,5 @@
 node_modules
 build
-.git
-.gitignore
+.dockerignore
 Dockerfile
-.editorconfig
+Dockerfile.prod

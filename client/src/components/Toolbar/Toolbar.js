@@ -91,6 +91,10 @@ export default class Toolbar extends Component {
         const url = "http://localhost:8080/gantt/import";
         const formData = { data: loaded_data };
         var postResult = post(url, formData).then((response) => resolve(true));
+<<<<<<< HEAD
+=======
+        console.log(postResult);
+>>>>>>> c5d3b557 (dockerfileovi i yml redone)
       };
       reader.readAsText(file);
     });

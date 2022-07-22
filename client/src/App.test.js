@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import React, { Component } from 'react';
 import Gantt from './components/Gantt';
 import './App.css';
@@ -43,3 +44,13 @@ class App extends Component {
     }
  }*/
 // export default App;
+=======
+import { render, screen } from '@testing-library/react';
+import App from './App';
+
+test('renders learn react link', () => {
+  render(<App />);
+  const linkElement = screen.getByText(/learn react/i);
+  expect(linkElement).toBeInTheDocument();
+});
+>>>>>>> c5d3b557 (dockerfileovi i yml redone)

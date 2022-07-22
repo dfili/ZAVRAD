@@ -1,18 +1,16 @@
-FROM node:16.10-alpine
+FROM node:16.8-alpine
 
 WORKDIR /client
 
+ENV PATH /app/node_modules/.bin:$PATH
+
 COPY package.json ./
-
-RUN corepack enable
-
-RUN yarn init -2
-RUN yarn
-RUN yarn global add serve
+COPY package-lock.json ./
+RUN npm install
 
 COPY ./public ./public
 COPY ./src ./src
 
-EXPOSE 5000
+EXPOSE 3000
 
-CMD yarn build && serve -s build
+CMD npm start
