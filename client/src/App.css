@@ -2,13 +2,6 @@
   text-align: center;
 }
 
-<<<<<<< HEAD
-body {
-    height:100vh;
-}
-
-=======
->>>>>>> c5d3b557 (dockerfileovi i yml redone)
 .App-logo {
   height: 40vmin;
   pointer-events: none;
@@ -43,21 +36,3 @@ body {
     transform: rotate(360deg);
   }
 }
-<<<<<<< HEAD
-
-.fullscreen {
-  position: fixed;
-  top: 20px;
-  left: 0;
-  bottom: 0;
-  right: 0;
-  overflow: auto;
-}
-
-.app-container {
-    display: flex;
-    height: 100%;
-    flex-direction: column;
-}
-=======
->>>>>>> c5d3b557 (dockerfileovi i yml redone)

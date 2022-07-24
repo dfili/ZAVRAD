@@ -1,8 +1,14 @@
-<<<<<<< HEAD
 import React, { Component } from 'react';
+import { render, screen } from '@testing-library/react';
 import Gantt from './components/Gantt';
 import './App.css';
+import App from './App';
 
+test('renders learn react link', () => {
+    render(<App />);
+    const linkElement = screen.getByText(/learn react/i);
+    expect(linkElement).toBeInTheDocument();
+  });
 /*const data = {
     data: [
         { id: 1, text: 'Task #1', start_date: '15-04-2019', duration: 3, progress: 0.6 },
@@ -44,13 +50,3 @@ class App extends Component {
     }
  }*/
 // export default App;
-=======
-import { render, screen } from '@testing-library/react';
-import App from './App';
-
-test('renders learn react link', () => {
-  render(<App />);
-  const linkElement = screen.getByText(/learn react/i);
-  expect(linkElement).toBeInTheDocument();
-});
->>>>>>> c5d3b557 (dockerfileovi i yml redone)
