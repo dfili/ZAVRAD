@@ -1,7 +1,12 @@
 # dependencies
 /client/node_modules/
 /client/package-lock.json
+/client/yarn.lock
+/client/package.json
 
 /client/npm-debug.log*
 /client/yarn-debug.log*
 /client/yarn-error.log*
+
+/.DS_store
+
