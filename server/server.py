@@ -63,7 +63,7 @@ def create_task():
         'fail_handled': False
     }
 
-    db[tasks].insert(task)
+    db.tasks.insert_one(task)
     return jsonify({"action": "inserted", "tid": "taskId"})
 
 
@@ -172,7 +172,7 @@ def add_link():
         "target": int(request.form['target']),
         "type": str(int(request.form['type']))
     }
-    db.links.insert(link)
+    db.links.insert_one(link)
     return jsonify({"action": "inserted", "tid": "linkId"})
 
 
@@ -193,7 +193,7 @@ def update_link(linkId):
 @cross_origin()
 def delete_link(linkId):
     query = {"link_id": int(linkId)}
-    db.links.remove(query)
+    db.links.delete_one(query)
     return jsonify({"action": "deleted"})
 
 
@@ -214,7 +214,7 @@ def import_actions():
             "time": 0,
             "price": 0
         }
-        db.actions.insert(initial_state)
+        db.actions.insert_one(initial_state)
         goal_state = {
             "action_id": get_next_sequence("actionId"),
             "name": "Goal state",
@@ -223,7 +223,7 @@ def import_actions():
             "time": 0,
             "price": 0
         }
-        db.actions.insert(goal_state)
+        db.actions.insert_one(goal_state)
 
     for (action, properties) in loaded_actions.items():
         action_data = {
@@ -320,7 +320,7 @@ def import_existing_project():
 # region utils
 
 def get_next_sequence(name):
-    sequence = db.counters.find_and_modify({"_id": name}, {"$inc": {"sequence_value": 1}}, new=True)
+    sequence = db.counters.update_one({"_id": name}, {"$inc": {"sequence_value": 1}}, new=True)
     if sequence is None:
         return 0
     return sequence.get('sequence_value')
@@ -338,9 +338,9 @@ def clear_chart():
 
 def clean_previous_plan_if_exists():
     db.links.delete_many({})
-    db.counters.find_and_modify(
+    db.counters.update_many(
         {"_id": 'linkId'}, {"$set": {"sequence_value": 0}})
-    db.counters.find_and_modify(
+    db.counters.update_many(
         {"_id": 'taskId'}, {"$set": {"sequence_value": 2}})
     query = {"taskid": {"$gt": 2}}
     db.tasks.delete_many(query)
@@ -534,7 +534,7 @@ def clean_after_failed_action(failed_task):
     all_tasks_found = False
     current_failed_task = failed_task
 
-    db.partial_plans.remove({})
+    db.partial_plans.delete_many({})
 
     while not all_tasks_found:
         link_to_next = db.links.find_one(
@@ -870,7 +870,7 @@ def construct_gantt_total_order_plan(partial_plan, initial_action):
             'color': 'rgb(61,185,211)',
             'fail_handled': False
         }
-        db.tasks.insert(task)
+        db.tasks.insert_one(task)
         step_added.append(step['step_id'])
 
     for order in final_order:
