@@ -1,3 +1,4 @@
+from itertools import count
 from flask import Flask, jsonify, request, make_response
 from flask_cors import cross_origin, CORS
 from pymongo import MongoClient
@@ -16,7 +17,7 @@ app.config['DEBUG'] = True
 app.config['CORS_HEADERS'] = 'Content-Type'
 sem = threading.Semaphore()
 
-#region API
+# region API
 
 
 @app.route('/', methods=['GET'])
@@ -24,7 +25,7 @@ sem = threading.Semaphore()
 def root():
     db.hits.insert_one({ 'time': datetime.utcnow() })
     #message = 'This page has been visited {} times.'.format(db.hits.count())
-    return jsonify({ 'message': 'This page has been visited {} times.'.format(db.hits.count()) })
+    return jsonify({ 'message': 'This page has been visited {} times.'.format(db.hits.count_documents({})) })
 
 
 @app.route('/gantt/plan', methods=['GET'])
@@ -62,7 +63,7 @@ def create_task():
         'fail_handled': False
     }
 
-    db.tasks.insert(task)
+    db[tasks].insert(task)
     return jsonify({"action": "inserted", "tid": "taskId"})
 
 
@@ -80,8 +81,8 @@ def get_tasks():
         task = {
             'id': int(mongo_task['taskid']),
             'text': mongo_task['text'],
-            'start_date':mongo_task['start_date'],
-            'end_date':mongo_task['end_date'],
+            'start_date': mongo_task['start_date'],
+            'end_date': mongo_task['end_date'],
             'action': mongo_task['action'],
             'progress': mongo_task['progress'],
             'parent': mongo_task['parent'],
@@ -313,13 +314,13 @@ def import_existing_project():
     return jsonify({'project_imported': True})
 
 
-#endregion
+# endregion
 
 
-#region utils
+# region utils
 
 def get_next_sequence(name):
-    sequence = db.counters.find_and_modify({"_id": name}, {"$inc":{"sequence_value":1}}, new=True)
+    sequence = db.counters.find_and_modify({"_id": name}, {"$inc": {"sequence_value": 1}}, new=True)
     if sequence is None:
         return 0
     return sequence.get('sequence_value')
@@ -329,14 +330,18 @@ def clear_chart():
     db.tasks.remove({})
     db.links.remove({})
     db.partial_plans.remove({})
-    db.counters.find_and_modify({"_id": 'linkId'}, {"$set": {"sequence_value": 0}})
-    db.counters.find_and_modify({"_id": 'taskId'}, {"$set": {"sequence_value": 0}})
+    db.counters.find_and_modify(
+        {"_id": 'linkId'}, {"$set": {"sequence_value": 0}})
+    db.counters.find_and_modify(
+        {"_id": 'taskId'}, {"$set": {"sequence_value": 0}})
 
 
 def clean_previous_plan_if_exists():
     db.links.remove({})
-    db.counters.find_and_modify({"_id": 'linkId'}, {"$set": {"sequence_value": 0}})
-    db.counters.find_and_modify({"_id": 'taskId'}, {"$set": {"sequence_value": 2}})
+    db.counters.find_and_modify(
+        {"_id": 'linkId'}, {"$set": {"sequence_value": 0}})
+    db.counters.find_and_modify(
+        {"_id": 'taskId'}, {"$set": {"sequence_value": 2}})
     query = {"taskid": {"$gt": 2}}
     db.tasks.remove(query)
     db.partial_plans.remove({})
@@ -454,8 +459,10 @@ def construct_total_order(partial_order):
             continue
         if step['step_id'] in total_order:
             continue
-        predecessors = get_recursive_predecessors(partial_order['ordering_constraints'], step['step_id'])
-        successors = get_recursive_successors(partial_order['ordering_constraints'], step['step_id'])
+        predecessors = get_recursive_predecessors(
+            partial_order['ordering_constraints'], step['step_id'])
+        successors = get_recursive_successors(
+            partial_order['ordering_constraints'], step['step_id'])
         min_i = max_predecessor(total_order, predecessors)
         max_i = min_successor(total_order, successors)
         if min_i > max_i:
@@ -465,7 +472,7 @@ def construct_total_order(partial_order):
             print(predecessors, flush=True)
             print(successors, flush=True)
         index = 0
-        if min_i == max_i or min_i+1==max_i:
+        if min_i == max_i or min_i+1 == max_i:
             index = max_i
         else:
             index = random.randint(min_i + 1, max_i)
@@ -493,11 +500,12 @@ def get_recursive_effects(task_id):
     while True:
         if current_task_id == 1:
             break
-        last_link = db.links.find_one({'target':current_task_id})
+        last_link = db.links.find_one({'target': current_task_id})
         predecessor = db.tasks.find_one({'taskid': last_link['source']})
         predecessor_effects = parse_conditions(predecessor['effects'])
         for predecessor_effect in predecessor_effects:
-            effect_exists = True in (effect['name'] == predecessor_effect['name'] for effect in effects)
+            effect_exists = True in (
+                effect['name'] == predecessor_effect['name'] for effect in effects)
             if not effect_exists:
                 effects.append(predecessor_effect)
 
@@ -515,10 +523,10 @@ def get_recursive_effects(task_id):
     return step_effects
 
 
-#endregion
+# endregion
 
 
-#region recalculation
+# region recalculation
 
 def clean_after_failed_action(failed_task):
     deleted_tasks = []
@@ -529,7 +537,8 @@ def clean_after_failed_action(failed_task):
     db.partial_plans.remove({})
 
     while not all_tasks_found:
-        link_to_next = db.links.find_one({'source': current_failed_task['taskid']})
+        link_to_next = db.links.find_one(
+            {'source': current_failed_task['taskid']})
         next_failed_task_id = link_to_next['target']
         next_failed_task = db.tasks.find_one({'taskid': next_failed_task_id})
         deleted_links.append(link_to_next)
@@ -548,23 +557,25 @@ def clean_after_failed_action(failed_task):
     max_link_index = db.links.find().sort('link_id', -1).limit(1)
 
     for max_task in max_task_index:
-        db.counters.find_and_modify({"_id": 'taskId'}, {"$set": {"sequence_value": max_task['taskid']}})
+        db.counters.find_and_modify(
+            {"_id": 'taskId'}, {"$set": {"sequence_value": max_task['taskid']}})
     for max_link in max_link_index:
-        db.counters.find_and_modify({"_id": 'linkId'}, {"$set": {"sequence_value": max_link['link_id']}})
+        db.counters.find_and_modify(
+            {"_id": 'linkId'}, {"$set": {"sequence_value": max_link['link_id']}})
 
     print("Done cleaning irrelevant tasks.", flush=True)
 
 
 def recalculate_plan(failed_task_id):
-    failed_task = db.tasks.find_one({'taskid':failed_task_id})
+    failed_task = db.tasks.find_one({'taskid': failed_task_id})
     clean_after_failed_action(failed_task)
     plan_gantt_actions(int(failed_task['action']))
 
 
-#endregion
+# endregion
 
 
-#region PoP
+# region PoP
 
 
 def plan_gantt_actions(initial_action):
@@ -595,7 +606,8 @@ def plan_gantt_actions(initial_action):
             actions.append(action)
             continue
 
-        action_exists = True in [used_action_id == db_action['action_id'] for used_action_id in used_actions]
+        action_exists = True in [
+            used_action_id == db_action['action_id'] for used_action_id in used_actions]
         if action_exists and db_action['action_id'] != 2 and db_action['action_id'] != initial_action:
             continue
         action = {
@@ -609,7 +621,8 @@ def plan_gantt_actions(initial_action):
 
     db_initial_state = db.tasks.find_one({'action': str(initial_action)})
     initial_step = {
-        'step_id': int(db_initial_state['action']),  # initial state action id = 1
+        # initial state action id = 1
+        'step_id': int(db_initial_state['action']),
         'preconditions': [],
         'posteffects': parse_conditions(db_initial_state['effects']),
         'time': int(db_initial_state['duration'])
@@ -674,7 +687,8 @@ def partial_order_planner(plan_problem, goals, actions):
     # 3. nondeterministically select step S or action with effect e
     #   if there is no such action fail -> IMPOSSIBLE PLAN
     #   otherwise update planning problem
-    valid_actions = where_contains_effect(actions, current_goal_precondition['name'], current_goal_precondition['value'])
+    valid_actions = where_contains_effect(
+        actions, current_goal_precondition['name'], current_goal_precondition['value'])
 
     valid_action_found = False
     while not valid_action_found:
@@ -690,7 +704,8 @@ def partial_order_planner(plan_problem, goals, actions):
             plan_problem['successful'] = False
             return plan_problem
 
-        selected_step = next((x for x in plan_problem['steps'] if x['step_id'] == selected_action['action_id']), None)
+        selected_step = next(
+            (x for x in plan_problem['steps'] if x['step_id'] == selected_action['action_id']), None)
         if selected_step is None:
             selected_step = {
                 'step_id': selected_action['action_id'],
@@ -735,13 +750,15 @@ def partial_order_planner(plan_problem, goals, actions):
             is_threat = check_if_threat(condition, selected_step_posteffects)
             if is_threat:
                 # case 1: DEMOTION -> is threat, but does not depend on source
-                dependencies = conditions_intersection(source['posteffects'], selected_step['preconditions'])
+                dependencies = conditions_intersection(
+                    source['posteffects'], selected_step['preconditions'])
                 if len(dependencies) == 0:
                     protection_order = {
                         'predecessor': selected_step,
                         'successor': causal_link['target']
                     }
-                    plan_problem['ordering_constraints'].append(protection_order)
+                    plan_problem['ordering_constraints'].append(
+                        protection_order)
                     continue
 
                 # case 2: PROMOTION -> is threat, depends on source, target does not threaten it
@@ -753,15 +770,16 @@ def partial_order_planner(plan_problem, goals, actions):
                 }
 
                 target_threats_step = any(effect['name'] == constraint_threat['name']
-                                        and effect['value'] == constraint_threat['value'] for effect in
-                                        causal_link_target['posteffects'])
+                                          and effect['value'] == constraint_threat['value'] for effect in
+                                          causal_link_target['posteffects'])
 
                 if not target_threats_step:
                     protection_order = {
                         'predecessor': causal_link['target'],
                         'successor': selected_step
                     }
-                    plan_problem['ordering_constraints'].append(protection_order)
+                    plan_problem['ordering_constraints'].append(
+                        protection_order)
                     # temp_constraints = [c for c in plan_problem['ordering_constraints']
                     #                     if c['predecessor']['step_id'] != causal_link['source']['step_id']
                     #                     and c['successor']['step_id'] != selected_step['step_id']]
@@ -787,10 +805,10 @@ def partial_order_planner(plan_problem, goals, actions):
     # 5. recursively call PoP
     return partial_order_planner(plan_problem, goals, actions)
 
-#endregion
+# endregion
 
 
-#region Gantt Plan
+# region Gantt Plan
 
 
 def construct_gantt_total_order_plan(partial_plan, initial_action):
@@ -826,7 +844,8 @@ def construct_gantt_total_order_plan(partial_plan, initial_action):
         step_duration_proportion = step_duration/total_steps_duration
         total_steps_duration -= step_duration
 
-        start_limit = int(plan_duration_minutes*step_duration_proportion) - step_duration
+        start_limit = int(plan_duration_minutes *
+                          step_duration_proportion) - step_duration
         start_minutes = random.randint(0, start_limit)
 
         start_date = start + timedelta(seconds=start_minutes*60)
@@ -869,7 +888,7 @@ def construct_gantt_total_order_plan(partial_plan, initial_action):
     return True
 
 
-#endregion
+# endregion
 
 
 if __name__ == '__main__':

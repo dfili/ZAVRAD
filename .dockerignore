@@ -1,3 +1,12 @@
 */client/node_modules
 */.idea
 */client/package-lock.json
+*/.DS_store
+
+Dockerfile
+.dockerignore
+.git
+.gitignore
+.cache
+venv/
+images/
