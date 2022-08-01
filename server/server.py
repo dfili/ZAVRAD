@@ -327,24 +327,24 @@ def get_next_sequence(name):
 
 
 def clear_chart():
-    db.tasks.remove({})
-    db.links.remove({})
-    db.partial_plans.remove({})
-    db.counters.find_and_modify(
+    db.tasks.delete_many({})
+    db.links.delete_many({})
+    db.partial_plans.delete_many({})
+    db.counters.update_many(
         {"_id": 'linkId'}, {"$set": {"sequence_value": 0}})
-    db.counters.find_and_modify(
+    db.counters.update_many(
         {"_id": 'taskId'}, {"$set": {"sequence_value": 0}})
 
 
 def clean_previous_plan_if_exists():
-    db.links.remove({})
+    db.links.delete_many({})
     db.counters.find_and_modify(
         {"_id": 'linkId'}, {"$set": {"sequence_value": 0}})
     db.counters.find_and_modify(
         {"_id": 'taskId'}, {"$set": {"sequence_value": 2}})
     query = {"taskid": {"$gt": 2}}
-    db.tasks.remove(query)
-    db.partial_plans.remove({})
+    db.tasks.delete_many(query)
+    db.partial_plans.delete_many({})
 
 
 def parse_conditions(conditions):
