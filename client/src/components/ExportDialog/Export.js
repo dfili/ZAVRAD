@@ -4,7 +4,6 @@ import "dhtmlx-gantt/codebase/dhtmlxgantt.css";
 import Dialog from "@material-ui/core/Dialog";
 import DialogTitle from "@material-ui/core/DialogTitle";
 import DialogActions from "@material-ui/core/DialogActions";
-import DialogContent from "@material-ui/core/DialogContent";
 import Button from "@material-ui/core/Button";
 
 export default class Export extends Component {
@@ -20,21 +19,21 @@ export default class Export extends Component {
           value: "PNG",
           // onClick: function () {
           //   gantt.exportToPNG({ raw: true });,
-          click: () => gantt.exportToPNG({ raw: true }),
+          click: () => gantt.exportToPNG({ name: "plan" }),
         },
         {
           value: "PDF",
-          click: () => gantt.exportToPDF({ raw: true })
+          click: () => gantt.exportToPDF({ raw: true, name: "plan" })
           ,
         },
         {
           value: "Excel",
-          click: () => gantt.exportToExcel({ raw: true })
+          click: () => gantt.exportToExcel({name: "plan"})
           ,
         },
         {
           value: "iCal",
-          click: () => gantt.exportToICal({ raw: true })
+          click: () => gantt.exportToICal({name: "plan"})
           ,
         },
         {
@@ -66,8 +65,6 @@ export default class Export extends Component {
         </Button>
         <Dialog open={this.state.open}> 
           <DialogTitle>{"Export as:"}</DialogTitle>
-          <DialogContent>
-          </DialogContent>
           <DialogActions>
             <div>{this.state.options.map(opt => <Button variant="contained" key={opt.value} onClick={() => opt.click}>{opt.value}</Button>)}</div>
             <Button onClick={this.handleClickToClose}>

@@ -25,6 +25,7 @@ class App extends Component {
         this.calculatePlan = this.calculatePlan.bind(this);
         this.clearPlan = this.clearPlan.bind(this);
         this.handleProjectImport = this.handleProjectImport.bind(this);
+        // zasto nema handle project import
     }
 
     handleProjectImport(){

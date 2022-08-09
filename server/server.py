@@ -201,11 +201,11 @@ def delete_link(linkId):
 @cross_origin()
 def import_actions():
     data = request.get_json()
-    action_data = data['data']
+    action_data = data['data'] # mislim da ovoga nema u primjeru akcija
     loaded_actions = action_data['actions']
 
     # if the collection is empty (or does not exist) first insert initial state action and goal state action
-    if "actions" not in db.list_collection_names() or db.actions.count() == 0:
+    if "actions" not in db.list_collection_names() or db.actions.count_documents({}) == 0:
         initial_state = {
             "action_id": get_next_sequence("actionId"),
             "name": "Initial state",
@@ -234,7 +234,7 @@ def import_actions():
             "time": properties['time'],
             "price": properties['price']
         }
-        db.actions.insert(action_data)
+        db.actions.insert_one(action_data)
     return jsonify({"action": "import"})
 
 
@@ -264,7 +264,7 @@ def clear_gantt_chart():
 def import_existing_project():
     sem.acquire()
     data = request.get_json()
-    gantt_data = data['data']
+    gantt_data = data['data'] # afaik, taj json ne izgleda tako, ali zasto se ovo aktivira kad radim import
     project_data = gantt_data['data']
     tasks = project_data['data']
     links = project_data['links']
@@ -299,7 +299,7 @@ def import_existing_project():
             'fail_handled': False
         }
 
-        db.tasks.insert(new_task)
+        db.tasks.insert_one(new_task)
 
     for link in links:
         new_link = {
@@ -308,7 +308,7 @@ def import_existing_project():
             "target": int(link['target']),
             "type": str(int(link['type']))
         }
-        db.links.insert(new_link)
+        db.links.insert_one(new_link)
 
     sem.release()
     return jsonify({'project_imported': True})
@@ -320,12 +320,13 @@ def import_existing_project():
 # region utils
 
 def get_next_sequence(name):
-    sequence = db.counters.update_one({"_id": name}, {"$inc": {"sequence_value": 1}}, new=True)
+    sequence = db.counters.update_one({"_id": name}, {"$inc": {"sequence_value": 1}}, upsert=True)
     if sequence is None:
         return 0
-    return sequence.get('sequence_value')
-
-
+    # return sequence.raw_result["sequence_value"] # vjv krivo, ali ne baca gresku, kasnije skuzi kako da izbaci sequence_value
+    a = db.counters.find_one({"_id": name}, {"sequence_value" : 1}).get("sequence_value") # this should work ali mi se ne svida 
+    print(a)
+    return a
 def clear_chart():
     db.tasks.delete_many({})
     db.links.delete_many({})
@@ -654,7 +655,7 @@ def plan_gantt_actions(initial_action):
     }
 
     plan = partial_order_planner(plan_problem, goals, actions)
-    db.partial_plans.insert(plan)
+    db.partial_plans.insert_one(plan)
     if plan['successful']:
         return construct_gantt_total_order_plan(plan, initial_action)
     return False

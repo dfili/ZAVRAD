@@ -11,6 +11,7 @@ export default class Toolbar extends Component {
   };
 
   importGanttActions() {
+    debugger;
     if (this.props.onActionsUpload) {
       this.props.onActionsUpload();
     }
@@ -30,6 +31,7 @@ export default class Toolbar extends Component {
     }
   }
 
+  // za importanje akcija
   handleFileChange = async (e) => {
     console.log("Handling file change");
     var fileChanged = await this.onChangeFile(e);
@@ -39,7 +41,7 @@ export default class Toolbar extends Component {
       this.importGanttActions();
     }
   };
-
+  // za importanje projekta
   handleProjectFileChange = async (e) => {
     console.log("Importing existing project.");
     var projectImported = await this.onProjectImport(e);
@@ -49,7 +51,7 @@ export default class Toolbar extends Component {
       }
     }
   };
-
+  // za import akcija 
   async onChangeFile(event) {
     return new Promise((resolve, reject) => {
       var file = event.target.files[0];
@@ -61,11 +63,13 @@ export default class Toolbar extends Component {
 
       reader.onload = (e) => {
         var loaded_data = JSON.parse(e.target.result);
-        console.log("Loaded data, should import now.");
+        console.log("Loaded data, should import actions now.");
+        console.log(loaded_data);
         // send loaded data to server to save in database
         const url = "http://localhost:8080/actions/import";
         const formData = { data: loaded_data };
-        var postResult = post(url, formData).then((response) => resolve(true));
+        var postResult = post(url, formData).then(response => {resolve(true)});
+        console.log(postResult.data);
       };
       reader.readAsText(file);
     });
@@ -86,7 +90,7 @@ export default class Toolbar extends Component {
 
       reader.onload = (e) => {
         var loaded_data = JSON.parse(e.target.result);
-        console.log("Loaded data, should import now.");
+        console.log("Loaded data, should import project now.");
         // send loaded data to server to save in database
         const url = "http://localhost:8080/gantt/import";
         const formData = { data: loaded_data };
@@ -142,7 +146,7 @@ export default class Toolbar extends Component {
             type="file"
             ref={(ref) => (this.upload = ref)}
             style={{ display: "none" }}
-            onChange={this.handleFileChange.bind(this)}
+            onChange={this.handleFileChange.bind(this)} // tf je onChange
           />
           <Button
             className="button-left"
