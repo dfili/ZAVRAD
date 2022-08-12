@@ -264,10 +264,10 @@ def clear_gantt_chart():
 def import_existing_project():
     sem.acquire()
     data = request.get_json()
-    gantt_data = data['data'] # afaik, taj json ne izgleda tako, ali zasto se ovo aktivira kad radim import
-    project_data = gantt_data['data']
-    tasks = project_data['data']
-    links = project_data['links']
+    #gantt_data = data['data'] # afaik, taj json ne izgleda tako, ali zasto se ovo aktivira kad radim import
+    #project_data = gantt_data['data']
+    tasks = data['data']
+    links = data['links']
     clear_chart()
 
     for task in tasks:
@@ -323,9 +323,7 @@ def get_next_sequence(name):
     sequence = db.counters.update_one({"_id": name}, {"$inc": {"sequence_value": 1}}, upsert=True)
     if sequence is None:
         return 0
-    # return sequence.raw_result["sequence_value"] # vjv krivo, ali ne baca gresku, kasnije skuzi kako da izbaci sequence_value
     a = db.counters.find_one({"_id": name}, {"sequence_value" : 1}).get("sequence_value") # this should work ali mi se ne svida 
-    print(a)
     return a
 def clear_chart():
     db.tasks.delete_many({})
