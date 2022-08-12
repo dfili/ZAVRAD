@@ -264,10 +264,11 @@ def clear_gantt_chart():
 def import_existing_project():
     sem.acquire()
     data = request.get_json()
+    print(data)
     #gantt_data = data['data'] # afaik, taj json ne izgleda tako, ali zasto se ovo aktivira kad radim import
-    #project_data = gantt_data['data']
-    tasks = data['data']
-    links = data['links']
+    project_data = data['data']
+    tasks = project_data['data']
+    links = project_data['links']
     clear_chart()
 
     for task in tasks:
@@ -277,8 +278,8 @@ def import_existing_project():
         if task_failed:
             color = 'rgb(245, 66, 87)'
 
-        start = datetime.strptime(task['start_date'], '%d-%m-%Y %H:%M')
-        end = datetime.strptime(task['end_date'], '%d-%m-%Y %H:%M')
+        start = datetime.strptime(task['start_date'], '%Y-%m-%d %H:%M')
+        end = datetime.strptime(task['end_date'], '%Y-%m-%d %H:%M')
 
         start_date = start.strftime('%Y-%m-%d %H:%M')
         end_date = end.strftime('%Y-%m-%d %H:%M')
@@ -291,7 +292,7 @@ def import_existing_project():
             'action': task["action"],
             'progress': float(task["progress"]),
             'parent': task["parent"],
-            'duration': int(task["duration"]),
+            #'duration': end_date-start_date,
             'failed': task_failed,
             'preconditions': task["preconditions"],
             'effects': task["effects"],

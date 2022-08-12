@@ -44,7 +44,12 @@ export default class Toolbar extends Component {
   // za importanje projekta
   handleProjectFileChange = async (e) => {
     console.log("Importing existing project.");
-    var projectImported = await this.onProjectImport(e);
+    var projectImported;
+    await this.onProjectImport(e).then(output => {
+      projectImported = output;
+      console.log(projectImported);
+    }).catch(err=> console.log(err))
+
     if (projectImported) {
       if (this.props.onProjectImport) {
         this.props.onProjectImport();
@@ -78,7 +83,6 @@ export default class Toolbar extends Component {
   async onProjectImport(event) {
     return new Promise((resolve, reject) => {
       var file = event.target.files[0];
-      console.log(file);
       if (file === "undefined") {
         resolve(false);
       }
@@ -87,14 +91,20 @@ export default class Toolbar extends Component {
       // 4 mirko računala vdx
       // 4 24gu...
       // laptop za bazu cva
-
       reader.onload = (e) => {
         var loaded_data = JSON.parse(e.target.result);
+        console.log(loaded_data);
         console.log("Loaded data, should import project now.");
         // send loaded data to server to save in database
+        const config = {
+          headers:{
+            "Content-type": "application/json"
+          }
+        }
         const url = "http://localhost:8080/gantt/import";
-        const formData = { data: loaded_data };
-        var postResult = post(url, formData).then((response) => resolve(true));
+        const formData = { "data": loaded_data };
+        console.log("formdata is " + formData);
+        var postResult = post(url, formData, config).then((response) => resolve(true));
         console.log(postResult);
       };
       reader.readAsText(file);
