@@ -64,7 +64,7 @@ def create_task():
     }
 
     db.tasks.insert_one(task)
-    return jsonify({"action": "inserted", "tid": "taskId"})
+    return jsonify({"action": "inserted", "tid": task['taskid']})
 
 
 @app.route('/gantt', methods=['GET'])
