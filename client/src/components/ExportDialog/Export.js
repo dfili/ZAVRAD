@@ -4,12 +4,18 @@ import Dialog from "@material-ui/core/Dialog";
 import DialogTitle from "@material-ui/core/DialogTitle";
 import DialogActions from "@material-ui/core/DialogActions";
 import Button from "@material-ui/core/Button"; 
+import { gantt } from 'dhtmlx-gantt';
 
 export default class Export extends Component {
   constructor() {
     super();
    // this.configSetup();
-    var gantt = require("https://export.dhtmlx.com/gantt/api.js");
+    const script = document.createElement("script");
+    script.async = true;
+    script.src = "http://export.dhtmlx.com/gantt/api.js";
+    script.id = "ganttApi";
+    document.body.appendChild(script);
+    document.head.appendChild(script);
     // gantt.add_export_methods();
     this.state = {
       open: false,
@@ -44,6 +50,7 @@ export default class Export extends Component {
     };
 
   }
+
   handleClickToOpen = () => {
     this.setState({open: true});
   };
@@ -80,7 +87,7 @@ export default class Export extends Component {
         <Dialog open={this.state.open}> 
           <DialogTitle>{"Export as:"}</DialogTitle>
           <DialogActions>
-            <div>{this.state.options.map(opt => <Button variant="contained" key={opt.value} onClick={() => opt.click}>{opt.value}</Button>)}</div>
+            <div>{this.state.options.map(opt => <Button variant="contained" key={opt.value} onClick={() => opt.click()}>{opt.value}</Button>)}</div>
             <Button variant="contained" key="pravi JSON" onClick={this.exportToJSON}>JSON koji radi</Button>
             <Button onClick={this.handleClickToClose}>
               Close
