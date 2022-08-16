@@ -25,7 +25,6 @@ class App extends Component {
         this.calculatePlan = this.calculatePlan.bind(this);
         this.clearPlan = this.clearPlan.bind(this);
         this.handleProjectImport = this.handleProjectImport.bind(this);
-        // zasto nema handle project import
     }
 
     handleProjectImport(){
@@ -126,6 +125,7 @@ class App extends Component {
         var planSuccessful = this.state.planSuccessful;
         var planCleared = this.state.planCleared;
         var projectImported = this.state.projectImported;
+        var actionsImported = this.state.actionsImported;
         var resourcesGathered = this.state.resourcesGathered;
         console.log("Gantt actions: ", ganttActions);
         return (
@@ -134,7 +134,7 @@ class App extends Component {
                     <Toolbar
                         zoom={currentZoom}
                         onZoomChange={this.handleZoomChange}
-                        onActionsUpload={this.getGanttActions}
+                        onGetActions={this.getGanttActions}
                         onCalculatePlan={this.calculatePlan}
                         onClearPlan={this.clearPlan}
                         onProjectImport={this.handleProjectImport}
@@ -149,6 +149,7 @@ class App extends Component {
                         planSuccessful={planSuccessful}
                         planCleared={planCleared}
                         projectImported={projectImported}
+                        actionsImported={actionsImported}
                     />
                 </Grid>
                 <Grid item xs={3} className="resource-container">

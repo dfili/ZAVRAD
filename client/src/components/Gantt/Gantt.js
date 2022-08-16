@@ -100,7 +100,8 @@ export default class Gantt extends Component {
         });
 
         gantt.serverList("actions", [
-            {key:1, label:"Initial state"}
+            {key:1, label:"Initial state"}, 
+            {key:2, label:"Goal state"}
         ]);
 
         var task_sections = [

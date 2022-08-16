@@ -10,10 +10,11 @@ export default class Toolbar extends Component {
     }
   };
 
-  importGanttActions() {
+  // za dohvacanje svih dostupnih akcija
+  importExistingGanttActions() {
     debugger;
-    if (this.props.onActionsUpload) {
-      this.props.onActionsUpload();
+    if (this.props.onGetActions) {
+      this.props.onGetActions(); // prop u app.js za hvatanje svih dostupnih akcija
     }
   }
 
@@ -38,18 +39,14 @@ export default class Toolbar extends Component {
     console.log("Promise returned: ", fileChanged);
     if (fileChanged) {
       console.log("File changed!");
-      this.importGanttActions();
+      this.importExistingGanttActions();
     }
   };
   // za importanje projekta
   handleProjectFileChange = async (e) => {
     console.log("Importing existing project.");
-    var projectImported;
-    await this.onProjectImport(e).then(output => {
-      projectImported = output;
-      console.log(projectImported);
-    }).catch(err=> console.log(err))
-
+    var projectImported = await this.onProjectImport(e).catch(err => console.log(err));
+    console.log("Promise returned: ", projectImported);
     if (projectImported) {
       if (this.props.onProjectImport) {
         this.props.onProjectImport();
@@ -96,16 +93,16 @@ export default class Toolbar extends Component {
         console.log(loaded_data);
         console.log("Loaded data, should import project now.");
         // send loaded data to server to save in database
-        const config = {
-          headers:{
-            "Content-type": "application/json"
-          }
-        }
+        // const config = {
+        //   headers:{
+        //     "Content-type": "application/json"
+        //   }
+        // }
         const url = "http://localhost:8080/gantt/import";
         const formData = { "data": loaded_data };
         console.log("formdata is " + formData);
-        var postResult = post(url, formData, config).then((response) => resolve(true));
-        console.log(postResult);
+        var postResult = post(url, formData).then((response) => resolve(true));
+        console.log(postResult.data);
       };
       reader.readAsText(file);
     });
@@ -154,7 +151,7 @@ export default class Toolbar extends Component {
           <input
             id="myInput"
             type="file"
-            ref={(ref) => (this.upload = ref)}
+            ref={(ref) => (this.uploadActions = ref)}
             style={{ display: "none" }}
             onChange={this.handleFileChange.bind(this)} // tf je onChange
           />
@@ -162,7 +159,7 @@ export default class Toolbar extends Component {
             className="button-left"
             variant="contained"
             onClick={() => {
-              this.upload.click();
+              this.uploadActions.click();
             }}
           >
             Import actions
@@ -170,7 +167,7 @@ export default class Toolbar extends Component {
           <input
             id="myInputPlan"
             type="file"
-            ref={(ref) => (this.upload = ref)}
+            ref={(ref) => (this.uploadProject = ref)}
             style={{ display: "none" }}
             onChange={this.handleProjectFileChange.bind(this)}
           />
@@ -178,7 +175,7 @@ export default class Toolbar extends Component {
             className="button-left"
             variant="contained"
             onClick={() => {
-              this.upload.click();
+              this.uploadProject.click();
             }}
           >
             Import project
