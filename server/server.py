@@ -1,5 +1,6 @@
+from curses import meta
 from itertools import count
-from flask import Flask, jsonify, request, make_response
+from flask import Flask, jsonify, request, make_response, redirect, session
 from flask_cors import cross_origin, CORS
 from pymongo import MongoClient
 from bson import json_util
@@ -12,6 +13,7 @@ import time
 app = Flask(__name__)
 client = MongoClient('mongo', 27017)
 db = client.db
+app.secret_key = "duga sifra"
 CORS(app)
 app.config['DEBUG'] = True
 app.config['CORS_HEADERS'] = 'Content-Type'
@@ -23,9 +25,9 @@ sem = threading.Semaphore()
 @app.route('/', methods=['GET'])
 @cross_origin()
 def root():
-    db.hits.insert_one({ 'time': datetime.utcnow() })
+    db.hits.insert_one({'time': datetime.utcnow()})
     #message = 'This page has been visited {} times.'.format(db.hits.count())
-    return jsonify({ 'message': 'This page has been visited {} times.'.format(db.hits.count_documents({})) })
+    return jsonify({'message': 'This page has been visited {} times.'.format(db.hits.count_documents({}))})
 
 
 @app.route('/gantt/plan', methods=['GET'])
@@ -47,24 +49,37 @@ def create_task():
     if task_failed:
         color = 'rgb(245, 66, 87)'
 
+    taskid = int(get_next_sequence("taskId"))
+    end_date = request.form["end_date"]
+    effects = request.form["effects"]
     task = {
-        'taskid': int(get_next_sequence("taskId")),
+        'taskid': taskid,
         'text': request.form["text"],
         'start_date': request.form["start_date"],
-        'end_date': request.form["end_date"],
+        'end_date': end_date,
         'action': request.form["action"],
         'progress': float(request.form["progress"]),
         'parent': request.form["parent"],
         'duration': int(request.form["duration"]),
         'failed': task_failed,
         'preconditions': request.form["preconditions"],
-        'effects': request.form["effects"],
+        'effects': effects,
         'color': color,
         'fail_handled': False
     }
 
     db.tasks.insert_one(task)
-    return jsonify({"action": "inserted", "tid": task['taskid']})
+    upload = []
+    for e in effects.split(", "):
+        effectid = get_next_sequence("effectId")
+        upload.append({"effectid": effectid, "effect": e, "taskid": taskid, "date_acquired": end_date})
+    
+    db.effects.insert_many(upload)
+    # session['taskid'] = taskid
+    # session['date_acquired'] = end_date
+    # session['effects'] = effects
+    # redirect("/effects")
+    return jsonify({"action": "inserted", "tid": task['taskid'], "effect": "inserted", "eid": effects})
 
 
 @app.route('/gantt', methods=['GET'])
@@ -126,6 +141,7 @@ def update_task(taskId):
         preconditions = request.form["preconditions"]
         effects = request.form["effects"]
 
+
     snapshot = db.tasks.find_one({'taskid': int(taskId)})
     fail_handled = snapshot['fail_handled']
 
@@ -160,6 +176,7 @@ def update_task(taskId):
 def delete_task(taskId):
     query = {"taskid": int(float(taskId))}
     db.tasks.delete_one(query)
+    db.effects.delete_many(query)
     return jsonify({"action": "deleted"})
 
 
@@ -201,7 +218,7 @@ def delete_link(linkId):
 @cross_origin()
 def import_actions():
     data = request.get_json()
-    action_data = data['data'] # mislim da ovoga nema u primjeru akcija
+    action_data = data['data']  # mislim da ovoga nema u primjeru akcija
     loaded_actions = action_data['actions']
 
     # if the collection is empty (or does not exist) first insert initial state action and goal state action
@@ -256,8 +273,45 @@ def get_actions():
 def clear_gantt_chart():
     sem.acquire()
     clear_chart()
+    session['effects'] = {}
     sem.release()
     return jsonify({'project_cleared': True})
+
+
+# od cega zelim da se efekt sastoji? ocito ime, roditeljski zadatak?
+# kasnije nekad dodati zadatak koji ga je iskoristio
+@app.route('/effects', methods=['GET'])
+def get_effects():
+    effects = []
+    effects_data = db.effects.find()
+    for effect_data in effects_data:
+        effect = {
+            "key": effect_data["effect_id"],
+            "label": effect_data["name"], 
+            "parent": effect_data["parent_task"], 
+            "time_acquired": effect_data["time_acquired"] # je li to onda vrijeme kad 
+        }
+        effects.append(effect)
+    return jsonify({"effects": effects})
+
+
+# je ali sta kad razlicite akcije imaju iste postconditione
+@app.route('/effects', methods=['POST'])
+def add_effect():
+    sem.acquire()
+    # data = request.get_json() ne vucem iz requesta nego cookiesa, sessiona ili nekako drugacije
+    effects = session.get('effects')
+    effects = effects.split(" ")
+    taskid = session.get('taskid')
+    date_acquired = session.get('date_acquired') 
+    upload = []
+    for e in effects:
+        effectid = get_next_sequence("effectId")
+        upload.append({"effectid": effectid, "effect": e, "taskid": taskid, "date_acquired": date_acquired})
+    
+    db.effects.update_many(upload, upsert=True)
+    sem.release()
+    return jsonify({'effects_added': True})
 
 
 @app.route('/gantt/import', methods=['POST'])
@@ -265,7 +319,7 @@ def import_existing_project():
     sem.acquire()
     data = request.get_json()
     print(data)
-    #gantt_data = data['data'] # afaik, taj json ne izgleda tako, ali zasto se ovo aktivira kad radim import
+    # gantt_data = data['data'] # afaik, taj json ne izgleda tako, ali zasto se ovo aktivira kad radim import
     project_data = data['data']
     tasks = project_data['data']
     links = project_data['links']
@@ -292,7 +346,7 @@ def import_existing_project():
             'action': task["action"],
             'progress': float(task["progress"]),
             'parent': task["parent"],
-            #'duration': end_date-start_date,
+            # 'duration': end_date-start_date,
             'failed': task_failed,
             'preconditions': task["preconditions"],
             'effects': task["effects"],
@@ -321,19 +375,26 @@ def import_existing_project():
 # region utils
 
 def get_next_sequence(name):
-    sequence = db.counters.update_one({"_id": name}, {"$inc": {"sequence_value": 1}}, upsert=True)
+    sequence = db.counters.update_one(
+        {"_id": name}, {"$inc": {"sequence_value": 1}}, upsert=True)
     if sequence is None:
         return 0
-    a = db.counters.find_one({"_id": name}, {"sequence_value" : 1}).get("sequence_value") # this should work ali mi se ne svida 
+    a = db.counters.find_one({"_id": name}, {"sequence_value": 1}).get(
+        "sequence_value")  # this should work ali mi se ne svida
     return a
+
+
 def clear_chart():
     db.tasks.delete_many({})
     db.links.delete_many({})
     db.partial_plans.delete_many({})
+    db.effects.delete_many({})
     db.counters.update_many(
         {"_id": 'linkId'}, {"$set": {"sequence_value": 0}})
     db.counters.update_many(
         {"_id": 'taskId'}, {"$set": {"sequence_value": 0}})
+    db.counters.update_many(
+        {"_id": 'effectId'}, {"$set": {"sequence_value": 0}})
 
 
 def clean_previous_plan_if_exists():
@@ -527,7 +588,7 @@ def get_recursive_effects(task_id):
 
 
 # region recalculation
-
+# dodati uklanjanje njegovih postconditiona iz baze
 def clean_after_failed_action(failed_task):
     deleted_tasks = []
     deleted_links = []
@@ -593,6 +654,7 @@ def plan_gantt_actions(initial_action):
         action = int(task['action'])
         used_actions.append(action)
 
+    # ovaj for loop vadi inicijalnu akciju i nekoristene akcije?
     for db_action in db_actions:
         if db_action['action_id'] == initial_action:
             initial_task = db.tasks.find_one({'action': str(initial_action)})
@@ -605,10 +667,18 @@ def plan_gantt_actions(initial_action):
             }
             actions.append(action)
             continue
+        # action_exists je true ako je true unutar liste
+        # koja se sastoji od true i false koji se dobiju provjerom je li trenutni action id
+        # iz koristenih akcija jednak gtrenutno promatranom action idu koji gledamo u funkciji
 
-        action_exists = True in [
+        # tj. ovo provjerava je li trenutna akcija vec koristena
+        action_used = True in [
             used_action_id == db_action['action_id'] for used_action_id in used_actions]
-        if action_exists and db_action['action_id'] != 2 and db_action['action_id'] != initial_action:
+
+        # zar se to ne moze i ljepse napisati
+        # action_exists = db_action['action_id'] in used_actions
+        # ne 2 jer je to goal state?
+        if action_used and db_action['action_id'] != 2 and db_action['action_id'] != initial_action:
             continue
         action = {
             'action_id': db_action['action_id'],
@@ -618,7 +688,7 @@ def plan_gantt_actions(initial_action):
             'time': int(db_action['time'])
         }
         actions.append(action)
-
+    # dodavanje pocetnog i ciljnog stanja u steps
     db_initial_state = db.tasks.find_one({'action': str(initial_action)})
     initial_step = {
         # initial state action id = 1
@@ -639,6 +709,7 @@ def plan_gantt_actions(initial_action):
     }
     steps.append(goal_step)
 
+    # dodavanje conditiona u ciljna stanja
     for goal_condition in goal_conditions:
         goal_state = {
             'c': goal_condition,

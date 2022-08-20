@@ -62,7 +62,7 @@ export default class Gantt extends Component {
     }
 
     shouldComponentUpdate(nextProps, nextState) {
-        console.log(nextProps);
+        console.log("NextProps: ", nextProps);
         var actionsUpdated = this.props.actions.length !== nextProps.actions.length;
         var zoomUpdated = this.props.zoom !== nextProps.zoom;
         var planUpdated = nextProps.planUpdated || nextState.planRecalculated || nextProps.planCleared || nextProps.projectImported;
@@ -74,11 +74,13 @@ export default class Gantt extends Component {
         gantt.config.xml_date = "%Y-%m-%d %H:%i";
         gantt.config.show_links = true;
         gantt.config.autofit = true;
-
+        gantt.plugins({
+            drag_timeline: true
+        });
         this.setColumns();
 
         var taskUpdateHandler = function(id,item){
-            console.log(item.failed);
+            console.log("Did component mount: ", item.failed);
             if (item.failed.includes('step_failed')){
                 setTimeout(() => {
                     this.setState({
@@ -108,7 +110,7 @@ export default class Gantt extends Component {
             { name: "description", height: 50, map_to: "text", type: "textarea", focus: true },
             { name: "time", height: 72, type: "time", map_to: "auto", time_format:["%d","%m","%Y","%H:%i"] },
             { name:"action", height: 50, map_to:"action", type:"select", options:gantt.serverList("actions") },
-            {name: "failed", type:"checkbox", map_to: "failed", options:[
+            { name: "failed", type:"checkbox", map_to: "failed", options:[
                 {key:"step_failed", label:"Step failed"}]},
             { name: "preconditions", height: 50, map_to:"preconditions", type:"textarea" },
             { name: "effects", height: 50, map_to:"effects", type:"textarea" }

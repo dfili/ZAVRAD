@@ -48,6 +48,20 @@ class App extends Component {
         });
     }
 
+    async getGanttEffects(){
+        console.log("Geting effects...");
+        this.setState({
+            isFetchingEffects:true
+        });
+        await fetch('http://localhost:8080/effects').then(res=> res.json()).then(data=>{
+            this.setState({
+                effects: data.effects,
+                isFetchingEffects: false
+            })
+            console.log("Loaded effects: ", this.state.effects);
+        });
+    }
+
     async calculatePlan(){
         console.log("Planning actions...");
         this.setState({
@@ -127,7 +141,6 @@ class App extends Component {
         var projectImported = this.state.projectImported;
         var actionsImported = this.state.actionsImported;
         var resourcesGathered = this.state.resourcesGathered;
-        console.log("Gantt actions: ", ganttActions);
         return (
             <div className="app-container">
                 <div className="zoom-bar">

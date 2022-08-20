@@ -93,15 +93,15 @@ export default class Toolbar extends Component {
         console.log(loaded_data);
         console.log("Loaded data, should import project now.");
         // send loaded data to server to save in database
-        // const config = {
-        //   headers:{
-        //     "Content-type": "application/json"
-        //   }
-        // }
+        const config = {
+          headers:{
+            "Content-type": "application/json"
+          }
+        }
         const url = "http://localhost:8080/gantt/import";
         const formData = { "data": loaded_data };
         console.log("formdata is " + formData);
-        var postResult = post(url, formData).then((response) => resolve(true));
+        var postResult = post(url, formData, config).then((response) => resolve(true));
         console.log(postResult.data);
       };
       reader.readAsText(file);
