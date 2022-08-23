@@ -1,32 +1,35 @@
-import React, { Component } from "react";
-import AcquiredResource from '../AcquiredResource/AcquiredResource.js';
+import React, { Component, useEffect, useState } from "react";
 
 export default class ResourceView extends Component {
-  constructor(props) {
+
+  constructor(props){
     super(props);
-
-    // this.configSetup();
-
-    this.state = {};
+    this.onNewResources = this.props.onNewResources.bind(this)
+    
+}
+  componentDidMount(){
+    if (this.onNewResources){9
+    this.onNewResources()}
   }
-  // shouldComponentUpdate(nextProps, nextState) {
-  //   console.log("NextProps: ", nextProps);
-  //   var effectsUpdated = this.props.effects.length !== nextProps.effects.length;
-  //   return effectsUpdated;
-  // }
 
-  getEffects = async () => {
-    var data = []
-    await fetch('http://localhost:8080/effects').then(res => res.json()).then(output => {
-      data = output;
-      console.log(data);
-    })
+  shouldComponentUpdate(nextProps, nextState) {
+    if (this.props.effects === nextProps.effects) {
+      return false;
+    }
   }
+
+  componentDidUpdate(prevProps, prevState){
+    if (prevProps.effects !== this.props.effects) {
+      console.log('Effects state has changed.')
+    }  
+  }
+
   // resource, resource type, date acquired
   render() {
+    console.log("Resources: ", this.props.effects);
     return (
       <div>
-        
+        {this.props.effects}
       </div>
     );
   }

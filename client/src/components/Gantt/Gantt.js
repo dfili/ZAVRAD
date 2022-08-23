@@ -62,7 +62,7 @@ export default class Gantt extends Component {
     }
 
     shouldComponentUpdate(nextProps, nextState) {
-        console.log("NextProps: ", nextProps);
+        
         var actionsUpdated = this.props.actions.length !== nextProps.actions.length;
         var zoomUpdated = this.props.zoom !== nextProps.zoom;
         var planUpdated = nextProps.planUpdated || nextState.planRecalculated || nextProps.planCleared || nextProps.projectImported;
@@ -89,8 +89,9 @@ export default class Gantt extends Component {
                 }, 200);
 
             }
+            
         }.bind(this);
-
+// potencijalno dodati on afterTaskupdate da se spremi sve iz zadatka u bazu
         gantt.attachEvent("onAfterTaskUpdate", taskUpdateHandler);
 
         gantt.attachEvent("onLoadStart", function(){

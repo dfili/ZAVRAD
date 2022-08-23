@@ -286,32 +286,32 @@ def get_effects():
     effects_data = db.effects.find()
     for effect_data in effects_data:
         effect = {
-            "key": effect_data["effect_id"],
-            "label": effect_data["name"], 
-            "parent": effect_data["parent_task"], 
-            "time_acquired": effect_data["time_acquired"] # je li to onda vrijeme kad 
+            "effectid": effect_data["effectid"],
+            "effect": effect_data["effect"], 
+            "taskid": effect_data["taskid"],             
+            "date_acquired": effect_data["date_acquired"] # je li to onda vrijeme kad 
         }
         effects.append(effect)
     return jsonify({"effects": effects})
 
 
 # je ali sta kad razlicite akcije imaju iste postconditione
-@app.route('/effects', methods=['POST'])
-def add_effect():
-    sem.acquire()
-    # data = request.get_json() ne vucem iz requesta nego cookiesa, sessiona ili nekako drugacije
-    effects = session.get('effects')
-    effects = effects.split(" ")
-    taskid = session.get('taskid')
-    date_acquired = session.get('date_acquired') 
-    upload = []
-    for e in effects:
-        effectid = get_next_sequence("effectId")
-        upload.append({"effectid": effectid, "effect": e, "taskid": taskid, "date_acquired": date_acquired})
+# @app.route('/effects', methods=['POST'])
+# def add_effect():
+#     sem.acquire()
+#     # data = request.get_json() ne vucem iz requesta nego cookiesa, sessiona ili nekako drugacije
+#     effects = session.get('effects')
+#     effects = effects.split(" ")
+#     taskid = session.get('taskid')
+#     date_acquired = session.get('date_acquired') 
+#     upload = []
+#     for e in effects:
+#         effectid = get_next_sequence("effectId")
+#         upload.append({"effectid": effectid, "effect": e, "taskid": taskid, "date_acquired": date_acquired})
     
-    db.effects.update_many(upload, upsert=True)
-    sem.release()
-    return jsonify({'effects_added': True})
+#     db.effects.update_many(upload, upsert=True)
+#     sem.release()
+#     return jsonify({'effects_added': True})
 
 
 @app.route('/gantt/import', methods=['POST'])
@@ -404,6 +404,9 @@ def clean_previous_plan_if_exists():
     db.counters.update_many(
         {"_id": 'taskId'}, {"$set": {"sequence_value": 2}})
     query = {"taskid": {"$gt": 2}}
+    db.effects.delete_many({})
+    db.counters.update_many(
+        {"_id": 'effectId'}, {"$set": {"sequence_value": 0}})
     db.tasks.delete_many(query)
     db.partial_plans.delete_many({})
 

@@ -12,7 +12,6 @@ export default class Toolbar extends Component {
 
   // za dohvacanje svih dostupnih akcija
   importExistingGanttActions() {
-    debugger;
     if (this.props.onGetActions) {
       this.props.onGetActions(); // prop u app.js za hvatanje svih dostupnih akcija
     }

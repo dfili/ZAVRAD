@@ -19,7 +19,8 @@ class App extends Component {
             isClearingPlan: false,
             planCleared: false,
             projectImported: false, 
-            resourcesGathered: []
+            resourcesGathered: [], 
+            isFetchingEffects: false
         }
         this.getGanttActions = this.getGanttActions.bind(this);
         this.calculatePlan = this.calculatePlan.bind(this);
@@ -38,7 +39,7 @@ class App extends Component {
         console.log("Getting Gantt actions...");
         this.setState({
             isFetchingActions:true
-        })
+        });
         await fetch('http://localhost:8080/actions').then(res => res.json()).then(data => {
             this.setState({
                 actions: data.actions,
@@ -53,12 +54,12 @@ class App extends Component {
         this.setState({
             isFetchingEffects:true
         });
-        await fetch('http://localhost:8080/effects').then(res=> res.json()).then(data=>{
-            this.setState({
-                effects: data.effects,
+        await fetch('http://localhost:8080/effects').then(res=> res.json()).then(data=>{ 
+        this.setState({
+                resourcesGathered: data.effects,
                 isFetchingEffects: false
             })
-            console.log("Loaded effects: ", this.state.effects);
+            console.log("Loaded effects: ", this.resourcesGathered);
         });
     }
 
@@ -101,7 +102,7 @@ class App extends Component {
 
     shouldComponentUpdate(nextProps, nextState){
         console.log(nextState);
-        if(nextState.isFetchingActions || nextState.isCalculatingPlan || nextState.isClearingPlan){
+        if(nextState.isFetchingActions || nextState.isCalculatingPlan || nextState.isClearingPlan || nextState.isFetchingEffects){
             return false;
         }
         return true;
@@ -167,7 +168,8 @@ class App extends Component {
                 </Grid>
                 <Grid item xs={3} className="resource-container">
                     <ResourceView
-                    resources={resourcesGathered}
+                    onNewResources={this.getGanttEffects}
+                    effects={resourcesGathered}
                     />
                 </Grid>
                 </Grid>
