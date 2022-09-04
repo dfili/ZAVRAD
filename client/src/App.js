@@ -12,6 +12,7 @@ class App extends Component {
             currentZoom: 'Days',
             currentTime: "0",
             actions: [],
+            resourcesGathered: [],
             isFetchingActions: false,
             isCalculatingPlan: false,
             planSuccessful: true,
@@ -19,13 +20,15 @@ class App extends Component {
             isClearingPlan: false,
             planCleared: false,
             projectImported: false, 
-            resourcesGathered: [], 
-            isFetchingEffects: false
+            isFetchingEffects: false, 
+            resourceShouldUpdate: false
         }
         this.getGanttActions = this.getGanttActions.bind(this);
+        this.getGanttEffects = this.getGanttEffects.bind(this);
         this.calculatePlan = this.calculatePlan.bind(this);
         this.clearPlan = this.clearPlan.bind(this);
         this.handleProjectImport = this.handleProjectImport.bind(this);
+        this.handleResourceUpdated = this.handleResourceUpdated.bind(this);
     }
 
     handleProjectImport(){
@@ -50,17 +53,19 @@ class App extends Component {
     }
 
     async getGanttEffects(){
-        console.log("Geting effects...");
+        console.log("Getting effects...");
         this.setState({
             isFetchingEffects:true
         });
         await fetch('http://localhost:8080/effects').then(res=> res.json()).then(data=>{ 
+        console.log("Effects: ", data);
+        // ne postavlja se state, data se ispise, a loaded effects bude prazno
         this.setState({
-                resourcesGathered: data.effects,
-                isFetchingEffects: false
-            })
-            console.log("Loaded effects: ", this.resourcesGathered);
-        });
+            resourcesGathered: data.effects,
+            isFetchingEffects: false, 
+            resourceShouldUpdate: true
+            });    
+        });  
     }
 
     async calculatePlan(){
@@ -99,7 +104,11 @@ class App extends Component {
             currentZoom: zoom
         });
     }
-
+    handleResourceUpdated(){
+        this.setState({
+            resourceShouldUpdate: false
+        });
+    }
     shouldComponentUpdate(nextProps, nextState){
         console.log(nextState);
         if(nextState.isFetchingActions || nextState.isCalculatingPlan || nextState.isClearingPlan || nextState.isFetchingEffects){
@@ -142,6 +151,7 @@ class App extends Component {
         var projectImported = this.state.projectImported;
         var actionsImported = this.state.actionsImported;
         var resourcesGathered = this.state.resourcesGathered;
+        var resourceShouldUpdate = this.state.resourceShouldUpdate;
         return (
             <div className="app-container">
                 <div className="zoom-bar">
@@ -164,12 +174,15 @@ class App extends Component {
                         planCleared={planCleared}
                         projectImported={projectImported}
                         actionsImported={actionsImported}
+                        onGetEffects={this.getGanttEffects}
+                        effects={resourcesGathered}
                     />
                 </Grid>
                 <Grid item xs={3} className="resource-container">
                     <ResourceView
-                    onNewResources={this.getGanttEffects}
                     effects={resourcesGathered}
+                    resourceShouldUpdate={resourceShouldUpdate}
+                    handleResourceUpdated={this.handleResourceUpdated}
                     />
                 </Grid>
                 </Grid>

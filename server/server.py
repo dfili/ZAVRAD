@@ -1,19 +1,14 @@
-from curses import meta
-from itertools import count
-from flask import Flask, jsonify, request, make_response, redirect, session
+from flask import Flask, jsonify, request
 from flask_cors import cross_origin, CORS
-from pymongo import MongoClient
+from pymongo import MongoClient, ReturnDocument
 from bson import json_util
 from datetime import datetime, timedelta
 import random
 import threading
-import time
-
 
 app = Flask(__name__)
 client = MongoClient('mongo', 27017)
 db = client.db
-app.secret_key = "duga sifra"
 CORS(app)
 app.config['DEBUG'] = True
 app.config['CORS_HEADERS'] = 'Content-Type'
@@ -48,12 +43,11 @@ def create_task():
     color = 'rgb(61,185,211)'
     if task_failed:
         color = 'rgb(245, 66, 87)'
-
-    taskid = int(get_next_sequence("taskId"))
+    task_id = int(get_next_sequence("task_id"))
     end_date = request.form["end_date"]
     effects = request.form["effects"]
     task = {
-        'taskid': taskid,
+        'task_id': task_id,
         'text': request.form["text"],
         'start_date': request.form["start_date"],
         'end_date': end_date,
@@ -67,19 +61,17 @@ def create_task():
         'color': color,
         'fail_handled': False
     }
-
     db.tasks.insert_one(task)
     upload = []
-    for e in effects.split(", "):
-        effectid = get_next_sequence("effectId")
-        upload.append({"effectid": effectid, "effect": e, "taskid": taskid, "date_acquired": end_date})
-    
-    db.effects.insert_many(upload)
-    # session['taskid'] = taskid
-    # session['date_acquired'] = end_date
-    # session['effects'] = effects
-    # redirect("/effects")
-    return jsonify({"action": "inserted", "tid": task['taskid'], "effect": "inserted", "eid": effects})
+    for e in effects.split("; "):
+        if e == "":
+            break
+        effect_id = get_next_sequence("effect_id")
+        upload.append({"effect_id": effect_id, "effect": e,
+                      "task_id": task_id, "date_acquired": end_date})
+    if len(upload) != 0:
+        db.effects.insert_many(upload)
+    return jsonify({"action": "inserted", "tid": task_id})
 
 
 @app.route('/gantt', methods=['GET'])
@@ -94,7 +86,7 @@ def get_tasks():
             checkboxes.append("step_failed")
 
         task = {
-            'id': int(mongo_task['taskid']),
+            'task_id': int(mongo_task['task_id']), 
             'text': mongo_task['text'],
             'start_date': mongo_task['start_date'],
             'end_date': mongo_task['end_date'],
@@ -113,7 +105,7 @@ def get_tasks():
 
     for mongo_link in mongo_links:
         link = {
-            'id': int(mongo_link['link_id']),
+            'link_id': int(mongo_link['link_id']),
             'source': mongo_link['source'],
             'target': mongo_link['target'],
             'type': str(mongo_link['type'])
@@ -123,9 +115,9 @@ def get_tasks():
     return json_util.dumps({'data': tasks, 'links': links})
 
 
-@app.route('/gantt/task/<taskId>', methods=['PUT'])
+@app.route('/gantt/task/<task_id>', methods=['PUT'])
 @cross_origin()
-def update_task(taskId):
+def update_task(task_id):
     sem.acquire()
     task_checkboxes = request.form["failed"]
     task_failed = "step_failed" in task_checkboxes
@@ -135,17 +127,16 @@ def update_task(taskId):
     if task_failed:
         color = 'rgb(245, 66, 87)'
         preconditions = ""
-        effects = get_recursive_effects(taskId)
+        effects = get_recursive_effects(task_id)
         fail_will_be_handled = True
     else:
         preconditions = request.form["preconditions"]
         effects = request.form["effects"]
 
-
-    snapshot = db.tasks.find_one({'taskid': int(taskId)})
+    snapshot = db.tasks.find_one({'task_id': int(task_id)})
     fail_handled = snapshot['fail_handled']
 
-    query = {"taskid": int(taskId)}
+    query = {"task_id": int(task_id)}
     values = {"$set": {
         'text': request.form["text"],
         'start_date': request.form["start_date"],
@@ -166,15 +157,15 @@ def update_task(taskId):
     db.tasks.find_one_and_update(query, values)
 
     if task_failed and not fail_handled:
-        recalculate_plan(int(taskId))
+        recalculate_plan(int(task_id))
     sem.release()
     return jsonify({"action": "updated"})
 
 
-@app.route('/gantt/task/<taskId>', methods=['DELETE'])
+@app.route('/gantt/task/<task_id>', methods=['DELETE'])
 @cross_origin()
-def delete_task(taskId):
-    query = {"taskid": int(float(taskId))}
+def delete_task(task_id):
+    query = {"task_id": int(float(task_id))}
     db.tasks.delete_one(query)
     db.effects.delete_many(query)
     return jsonify({"action": "deleted"})
@@ -184,19 +175,19 @@ def delete_task(taskId):
 @cross_origin()
 def add_link():
     link = {
-        "link_id": get_next_sequence("linkId"),
+        "link_id": get_next_sequence("link_id"),
         "source": int(request.form['source']),
         "target": int(request.form['target']),
         "type": str(int(request.form['type']))
     }
     db.links.insert_one(link)
-    return jsonify({"action": "inserted", "tid": "linkId"})
+    return jsonify({"action": "inserted", "tid": "link_id"})
 
 
-@app.route('/gantt/link/<linkId>', methods=['PUT'])
+@app.route('/gantt/link/<link_id>', methods=['PUT'])
 @cross_origin()
-def update_link(linkId):
-    query = {"link_id": int(linkId)}
+def update_link(link_id):
+    query = {"link_id": int(link_id)}
     values = {"$set": {
         "source": int(request.form['source']),
         "target": int(request.form['target']),
@@ -206,10 +197,10 @@ def update_link(linkId):
     return jsonify({"action": "updated"})
 
 
-@app.route('/gantt/link/<linkId>', methods=['DELETE'])
+@app.route('/gantt/link/<link_id>', methods=['DELETE'])
 @cross_origin()
-def delete_link(linkId):
-    query = {"link_id": int(linkId)}
+def delete_link(link_id):
+    query = {"link_id": int(link_id)}
     db.links.delete_one(query)
     return jsonify({"action": "deleted"})
 
@@ -224,19 +215,19 @@ def import_actions():
     # if the collection is empty (or does not exist) first insert initial state action and goal state action
     if "actions" not in db.list_collection_names() or db.actions.count_documents({}) == 0:
         initial_state = {
-            "action_id": get_next_sequence("actionId"),
+            "action_id": get_next_sequence("action_id"),
             "name": "Initial state",
             "preconditions": "",
-            "posteffect": "",
+            "effects": "",
             "time": 0,
             "price": 0
         }
         db.actions.insert_one(initial_state)
         goal_state = {
-            "action_id": get_next_sequence("actionId"),
+            "action_id": get_next_sequence("action_id"),
             "name": "Goal state",
             "preconditions": "",
-            "posteffect": "",
+            "effects": "",
             "time": 0,
             "price": 0
         }
@@ -244,10 +235,10 @@ def import_actions():
 
     for (action, properties) in loaded_actions.items():
         action_data = {
-            "action_id": get_next_sequence("actionId"),
+            "action_id": get_next_sequence("action_id"),
             "name": action,
             "preconditions": properties['preconditions'],
-            "posteffect": properties['posteffects'],
+            "effects": properties['posteffects'],
             "time": properties['time'],
             "price": properties['price']
         }
@@ -263,7 +254,11 @@ def get_actions():
     for action_data in actions_data:
         action = {
             "key": action_data["action_id"],
-            "label": action_data["name"]
+            "label": action_data["name"],
+            "preconditions": action_data["preconditions"],
+            "effects": action_data["effects"],
+            "time": action_data["time"],
+            "price": action_data["price"]
         }
         actions.append(action)
     return jsonify({"actions": actions})
@@ -273,7 +268,6 @@ def get_actions():
 def clear_gantt_chart():
     sem.acquire()
     clear_chart()
-    session['effects'] = {}
     sem.release()
     return jsonify({'project_cleared': True})
 
@@ -286,10 +280,10 @@ def get_effects():
     effects_data = db.effects.find()
     for effect_data in effects_data:
         effect = {
-            "effectid": effect_data["effectid"],
-            "effect": effect_data["effect"], 
-            "taskid": effect_data["taskid"],             
-            "date_acquired": effect_data["date_acquired"] # je li to onda vrijeme kad 
+            "effect_id": effect_data["effect_id"],
+            "effect": effect_data["effect"],
+            "task_id": effect_data["task_id"],
+            "date_acquired": effect_data["date_acquired"]
         }
         effects.append(effect)
     return jsonify({"effects": effects})
@@ -302,13 +296,13 @@ def get_effects():
 #     # data = request.get_json() ne vucem iz requesta nego cookiesa, sessiona ili nekako drugacije
 #     effects = session.get('effects')
 #     effects = effects.split(" ")
-#     taskid = session.get('taskid')
-#     date_acquired = session.get('date_acquired') 
+#     task_id = session.get('task_id')
+#     date_acquired = session.get('date_acquired')
 #     upload = []
 #     for e in effects:
-#         effectid = get_next_sequence("effectId")
-#         upload.append({"effectid": effectid, "effect": e, "taskid": taskid, "date_acquired": date_acquired})
-    
+#         effect_id = get_next_sequence("effect_id")
+#         upload.append({"effect_id": effect_id, "effect": e, "task_id": task_id, "date_acquired": date_acquired})
+
 #     db.effects.update_many(upload, upsert=True)
 #     sem.release()
 #     return jsonify({'effects_added': True})
@@ -324,7 +318,7 @@ def import_existing_project():
     tasks = project_data['data']
     links = project_data['links']
     clear_chart()
-
+    task_inserts = []
     for task in tasks:
         task_checkboxes = task["failed"]
         task_failed = "task_failed" in task_checkboxes
@@ -337,9 +331,9 @@ def import_existing_project():
 
         start_date = start.strftime('%Y-%m-%d %H:%M')
         end_date = end.strftime('%Y-%m-%d %H:%M')
-
+    # HERE
         new_task = {
-            'taskid': int(get_next_sequence("taskId")),
+            'task_id': int(get_next_sequence("task_id")),
             'text': task["text"],
             'start_date': start_date,
             'end_date': end_date,
@@ -353,17 +347,18 @@ def import_existing_project():
             'color': color,
             'fail_handled': False
         }
-
-        db.tasks.insert_one(new_task)
-
+        task_inserts.append(new_task)
+    db.tasks.insert_many(task_inserts)
+    link_inserts = []
     for link in links:
         new_link = {
-            "link_id": get_next_sequence("linkId"),
+            "link_id": get_next_sequence("link_id"),
             "source": int(link['source']),
             "target": int(link['target']),
             "type": str(int(link['type']))
         }
-        db.links.insert_one(new_link)
+        link_inserts.append(new_link)
+    db.links.insert_many(link_inserts)
 
     sem.release()
     return jsonify({'project_imported': True})
@@ -374,14 +369,15 @@ def import_existing_project():
 
 # region utils
 
+# HERE, ovo zadnje promijeni jer mi se cini da ovo lose radi
 def get_next_sequence(name):
-    sequence = db.counters.update_one(
-        {"_id": name}, {"$inc": {"sequence_value": 1}}, upsert=True)
-    if sequence is None:
-        return 0
-    a = db.counters.find_one({"_id": name}, {"sequence_value": 1}).get(
-        "sequence_value")  # this should work ali mi se ne svida
-    return a
+    sequence = db.counters.find_one_and_update(
+        filter={"_id": name},
+        update={"$inc": {"sequence_value": 1}},
+        projection={"_id": False, "sequence_value": True},
+        upsert=True,
+        return_document=ReturnDocument.AFTER).get("sequence_value")
+    return int(sequence)
 
 
 def clear_chart():
@@ -390,23 +386,21 @@ def clear_chart():
     db.partial_plans.delete_many({})
     db.effects.delete_many({})
     db.counters.update_many(
-        {"_id": 'linkId'}, {"$set": {"sequence_value": 0}})
+        {"_id": 'link_id'}, {"$set": {"sequence_value": 0}})
     db.counters.update_many(
-        {"_id": 'taskId'}, {"$set": {"sequence_value": 0}})
+        {"_id": 'task_id'}, {"$set": {"sequence_value": 0}})
     db.counters.update_many(
-        {"_id": 'effectId'}, {"$set": {"sequence_value": 0}})
+        {"_id": 'effect_id'}, {"$set": {"sequence_value": 0}})
 
 
 def clean_previous_plan_if_exists():
     db.links.delete_many({})
-    db.counters.update_many(
-        {"_id": 'linkId'}, {"$set": {"sequence_value": 0}})
-    db.counters.update_many(
-        {"_id": 'taskId'}, {"$set": {"sequence_value": 2}})
-    query = {"taskid": {"$gt": 2}}
+    db.counters.update_many({"_id": 'link_id'}, {"$set": {"sequence_value": 0}})
+    db.counters.update_many({"_id": 'task_id'}, {"$set": {"sequence_value": 2}})
+    query = {"task_id": {"$gt": 2}}
     db.effects.delete_many({})
-    db.counters.update_many(
-        {"_id": 'effectId'}, {"$set": {"sequence_value": 0}})
+    db.counters.update_many({"_id": 'effect_id'}, {
+                            "$set": {"sequence_value": 0}})
     db.tasks.delete_many(query)
     db.partial_plans.delete_many({})
 
@@ -440,7 +434,7 @@ def check_if_threat(condition, posteffects):
 def where_contains_effect(actions, condition_name, condition_value):
     valid_actions = []
     for action in actions:
-        effects = action['posteffects']
+        effects = action['effects']
         for effect in effects:
             if effect['name'] == condition_name and effect['value'] == condition_value:
                 valid_actions.append(action)
@@ -565,7 +559,7 @@ def get_recursive_effects(task_id):
         if current_task_id == 1:
             break
         last_link = db.links.find_one({'target': current_task_id})
-        predecessor = db.tasks.find_one({'taskid': last_link['source']})
+        predecessor = db.tasks.find_one({'task_id': last_link['source']})
         predecessor_effects = parse_conditions(predecessor['effects'])
         for predecessor_effect in predecessor_effects:
             effect_exists = True in (
@@ -575,7 +569,7 @@ def get_recursive_effects(task_id):
 
         if predecessor['failed']:
             break
-        current_task_id = predecessor['taskid']
+        current_task_id = predecessor['task_id']
 
     effect_strings = []
     for effect in effects:
@@ -602,9 +596,9 @@ def clean_after_failed_action(failed_task):
 
     while not all_tasks_found:
         link_to_next = db.links.find_one(
-            {'source': current_failed_task['taskid']})
+            {'source': current_failed_task['task_id']})
         next_failed_task_id = link_to_next['target']
-        next_failed_task = db.tasks.find_one({'taskid': next_failed_task_id})
+        next_failed_task = db.tasks.find_one({'task_id': next_failed_task_id})
         deleted_links.append(link_to_next)
         if next_failed_task['action'] == "2":
             all_tasks_found = True
@@ -613,25 +607,25 @@ def clean_after_failed_action(failed_task):
             current_failed_task = next_failed_task
 
     for task in deleted_tasks:
-        db.tasks.remove({'taskid': task['taskid']})
+        db.tasks.remove({'task_id': task['task_id']})
     for link in deleted_links:
         db.links.remove({'link_id': link['link_id']})
 
-    max_task_index = db.tasks.find().sort('taskid', -1).limit(1)
+    max_task_index = db.tasks.find().sort('task_id', -1).limit(1)
     max_link_index = db.links.find().sort('link_id', -1).limit(1)
 
     for max_task in max_task_index:
         db.counters.find_and_modify(
-            {"_id": 'taskId'}, {"$set": {"sequence_value": max_task['taskid']}})
+            {"_id": 'task_id'}, {"$set": {"sequence_value": max_task['task_id']}})
     for max_link in max_link_index:
         db.counters.find_and_modify(
-            {"_id": 'linkId'}, {"$set": {"sequence_value": max_link['link_id']}})
+            {"_id": 'link_id'}, {"$set": {"sequence_value": max_link['link_id']}})
 
     print("Done cleaning irrelevant tasks.", flush=True)
 
 
 def recalculate_plan(failed_task_id):
-    failed_task = db.tasks.find_one({'taskid': failed_task_id})
+    failed_task = db.tasks.find_one({'task_id': failed_task_id})
     clean_after_failed_action(failed_task)
     plan_gantt_actions(int(failed_task['action']))
 
@@ -665,7 +659,7 @@ def plan_gantt_actions(initial_action):
                 'action_id': db_action['action_id'],
                 'name': db_action['name'],
                 'preconditions': parse_conditions(initial_task['preconditions']),
-                'posteffects': parse_conditions(initial_task['effects']),
+                'effects': parse_conditions(initial_task['effects']),
                 'time': int(db_action['time'])
             }
             actions.append(action)
@@ -687,7 +681,7 @@ def plan_gantt_actions(initial_action):
             'action_id': db_action['action_id'],
             'name': db_action['name'],
             'preconditions': parse_conditions(db_action['preconditions']),
-            'posteffects': parse_conditions(db_action['posteffect']),
+            'effects': parse_conditions(db_action['effects']),
             'time': int(db_action['time'])
         }
         actions.append(action)
@@ -697,7 +691,7 @@ def plan_gantt_actions(initial_action):
         # initial state action id = 1
         'step_id': int(db_initial_state['action']),
         'preconditions': [],
-        'posteffects': parse_conditions(db_initial_state['effects']),
+        'effects': parse_conditions(db_initial_state['effects']),
         'time': int(db_initial_state['duration'])
     }
     steps.append(initial_step)
@@ -707,7 +701,7 @@ def plan_gantt_actions(initial_action):
     goal_step = {
         'step_id': int(db_goal_state['action']),  # goal state action id = 2
         'preconditions': goal_conditions,
-        'posteffects': [],
+        'effects': [],
         'time': int(db_goal_state['duration'])
     }
     steps.append(goal_step)
@@ -784,7 +778,7 @@ def partial_order_planner(plan_problem, goals, actions):
             selected_step = {
                 'step_id': selected_action['action_id'],
                 'preconditions': selected_action['preconditions'],
-                'posteffects': selected_action['posteffects'],
+                'effects': selected_action['effects'],
                 'time': selected_action['time']
             }
             plan_problem['steps'].append(selected_step)
@@ -816,7 +810,7 @@ def partial_order_planner(plan_problem, goals, actions):
         plan_problem['causal_links'].append(new_causal_link)
 
         # 4. causal link protection
-        selected_step_posteffects = selected_step['posteffects']
+        selected_step_posteffects = selected_step['effects']
         all_causal_links_protected = True
         for causal_link in causal_links:
             condition = causal_link['c']
@@ -825,7 +819,7 @@ def partial_order_planner(plan_problem, goals, actions):
             if is_threat:
                 # case 1: DEMOTION -> is threat, but does not depend on source
                 dependencies = conditions_intersection(
-                    source['posteffects'], selected_step['preconditions'])
+                    source['effects'], selected_step['preconditions'])
                 if len(dependencies) == 0:
                     protection_order = {
                         'predecessor': selected_step,
@@ -845,7 +839,7 @@ def partial_order_planner(plan_problem, goals, actions):
 
                 target_threats_step = any(effect['name'] == constraint_threat['name']
                                           and effect['value'] == constraint_threat['value'] for effect in
-                                          causal_link_target['posteffects'])
+                                          causal_link_target['effects'])
 
                 if not target_threats_step:
                     protection_order = {
@@ -930,7 +924,7 @@ def construct_gantt_total_order_plan(partial_plan, initial_action):
 
         step_action = db.actions.find_one({'action_id': step['step_id']})
         task = {
-            'taskid': get_next_sequence("taskId"),
+            'task_id': get_next_sequence("task_id"),
             'text': step_action['name'],
             'start_date': str(start_date),
             'end_date': str(end_date),
@@ -939,7 +933,7 @@ def construct_gantt_total_order_plan(partial_plan, initial_action):
             'parent': initial_task["parent"],
             'duration': step['time'],
             'preconditions': step_action["preconditions"],
-            'effects': step_action["posteffect"],
+            'effects': step_action["effects"],
             'failed': False,
             'color': 'rgb(61,185,211)',
             'fail_handled': False
@@ -953,9 +947,9 @@ def construct_gantt_total_order_plan(partial_plan, initial_action):
         task_from = db.tasks.find_one({'action': str(int(action_from))})
         task_to = db.tasks.find_one({'action': str(int(action_to))})
         link = {
-            'link_id': get_next_sequence('linkId'),
-            'source': int(task_from['taskid']),
-            'target': int(task_to['taskid']),
+            'link_id': get_next_sequence('link_id'),
+            'source': int(task_from['task_id']),
+            'target': int(task_to['task_id']),
             'type': "0"
         }
         db.links.insert(link)

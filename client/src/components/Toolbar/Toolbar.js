@@ -148,11 +148,11 @@ export default class Toolbar extends Component {
             Close
           </Button>
           <input
-            id="myInput"
+            id="myInputFile"
             type="file"
             ref={(ref) => (this.uploadActions = ref)}
             style={{ display: "none" }}
-            onChange={this.handleFileChange.bind(this)} // tf je onChange
+            onChange={this.handleFileChange.bind(this)}
           />
           <Button
             className="button-left"
@@ -180,7 +180,7 @@ export default class Toolbar extends Component {
             Import project
           </Button>
 
-          <Export />
+          <Export/>
         </div>
       </div>
     );

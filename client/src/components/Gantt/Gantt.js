@@ -9,20 +9,18 @@ import 'dhtmlx-gantt/codebase/dhtmlxgantt.css';
 export default class Gantt extends Component {
     constructor(props){
         super(props);
-
         this.configSetup();
-
+        this.onGetEffects = this.props.onGetEffects.bind(this);
         this.state = {
             planRecalculated: false
-        }
+        };
     }
 
     dataProcessor = null;
-
     initGanttDataProcessor(){
         this.dataProcessor = gantt.createDataProcessor({
             url: "http://localhost:8080/gantt",
-            mode:"REST"
+            mode: "REST"
         });
     }
 
@@ -62,7 +60,6 @@ export default class Gantt extends Component {
     }
 
     shouldComponentUpdate(nextProps, nextState) {
-        
         var actionsUpdated = this.props.actions.length !== nextProps.actions.length;
         var zoomUpdated = this.props.zoom !== nextProps.zoom;
         var planUpdated = nextProps.planUpdated || nextState.planRecalculated || nextProps.planCleared || nextProps.projectImported;
@@ -80,24 +77,57 @@ export default class Gantt extends Component {
         this.setColumns();
 
         var taskUpdateHandler = function(id,item){
-            console.log("Did component mount: ", item.failed);
+            if (this.onGetEffects){
+                this.onGetEffects();
+            }
             if (item.failed.includes('step_failed')){
                 setTimeout(() => {
                     this.setState({
                         planRecalculated: true
                     });
                 }, 200);
-
             }
-            
         }.bind(this);
-// potencijalno dodati on afterTaskupdate da se spremi sve iz zadatka u bazu
+
+        var newEffectsHandler = function() {
+            console.log("New effects will load");
+            if (this.onGetEffects){
+                this.onGetEffects();
+            }
+        }.bind(this);
+        
+        // gantt.attachEvent("onLightbox", function (task_id) {
+        //     var text_areas = document.querySelectorAll("textarea");
+        //     var action_id = document.querySelectorAll("select")[8].value;
+        //     var action_obj = gantt.serverList("actions").filter(action => {
+        //         return action["key"] === action_id;             
+        //     })
+        //     action_obj = [];
+        //     gantt.serverList("actions").forEach(element => {
+        //         if (Object.is(element["key"], action_id)){
+        //             action_obj.join(element);
+        //         }
+        //     });
+        //     console.log(action_obj);
+        //     var action_element = gantt.getLightboxSection("action");
+        
+        //     action_element.node.onselect = function () {
+        //         text_areas[1].value = action_obj["preconditions"];
+        //         text_areas[2].value = action_obj["effects"];
+        //     }
+        // });
+
         gantt.attachEvent("onAfterTaskUpdate", taskUpdateHandler);
 
-        gantt.attachEvent("onLoadStart", function(){
+        gantt.attachEvent("onLoadStart", function(){                      
             gantt.message({id:"calculating", type:"warning", text:"Recalculating plan...", expire:300});
         });
-
+        // gantt.attachEvent("onBeforeDataRender", () => {
+        //     var actions = this.props.actions;
+        //     gantt.updateCollection("actions", actions);
+            
+        // })
+        gantt.attachEvent("onAfterTaskAdd", newEffectsHandler);
         gantt.attachEvent("onLoadEnd", function(){
             gantt.message.hide("calculating");
         });
@@ -108,7 +138,7 @@ export default class Gantt extends Component {
         ]);
 
         var task_sections = [
-            { name: "description", height: 50, map_to: "text", type: "textarea", focus: true },
+            { name: "description", height: 50, map_to: "text", type: "textarea", focus: true},
             { name: "time", height: 72, type: "time", map_to: "auto", time_format:["%d","%m","%Y","%H:%i"] },
             { name:"action", height: 50, map_to:"action", type:"select", options:gantt.serverList("actions") },
             { name: "failed", type:"checkbox", map_to: "failed", options:[
@@ -138,10 +168,11 @@ export default class Gantt extends Component {
     }
 
     componentWillUnmount() {
+        //gantt.detachAllEvents();
         if (this.dataProcessor) {
             this.dataProcessor.destructor();
             this.dataProcessor = null;
-        }
+        }    
     }
 
     componentDidUpdate() {

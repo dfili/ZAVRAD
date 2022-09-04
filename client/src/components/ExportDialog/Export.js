@@ -24,11 +24,11 @@ export default class Export extends Component {
           value: "PNG",
           // onClick: function () {
           //   gantt.exportToPNG({ raw: true });,
-          click: () => gantt.exportToPNG(),
+          click: () => gantt.exportToPNG({raw:true, start:gantt.getState().min_date}),
         },
         {
           value: "PDF",
-          click: () => gantt.exportToPDF()
+          click: () => gantt.exportToPDF({raw:true, start:gantt.getState().min_date})
           ,
         },
         {
@@ -43,7 +43,7 @@ export default class Export extends Component {
         },
         {
           value: "JSON",
-          click: () => gantt.exportToJSON({ raw: true })
+          click: () => gantt.exportToJSON()
           ,
         },
       ]
@@ -88,7 +88,6 @@ export default class Export extends Component {
           <DialogTitle>{"Export as:"}</DialogTitle>
           <DialogActions>
             <div>{this.state.options.map(opt => <Button variant="contained" key={opt.value} onClick={() => opt.click()}>{opt.value}</Button>)}</div>
-            <Button variant="contained" key="pravi JSON" onClick={this.exportToJSON}>JSON koji radi</Button>
             <Button onClick={this.handleClickToClose}>
               Close
             </Button>            

@@ -1,21 +1,19 @@
-import React, { Component, useEffect, useState } from "react";
+import React, { Component} from "react";
 
 export default class ResourceView extends Component {
 
   constructor(props){
     super(props);
-    this.onNewResources = this.props.onNewResources.bind(this)
-    
-}
-  componentDidMount(){
-    if (this.onNewResources){9
-    this.onNewResources()}
+    this.handleResourceUpdated = this.props.handleResourceUpdated.bind(this);
   }
 
   shouldComponentUpdate(nextProps, nextState) {
-    if (this.props.effects === nextProps.effects) {
-      return false;
+    if (this.props.ResourceShouldUpdate === true) {
+      if (this.handleResourceUpdated){
+      this.handleResourceUpdated();}
+      return true;
     }
+    return false;
   }
 
   componentDidUpdate(prevProps, prevState){
@@ -29,7 +27,7 @@ export default class ResourceView extends Component {
     console.log("Resources: ", this.props.effects);
     return (
       <div>
-        {this.props.effects}
+        <div>{this.props.effects.map(eff => <div name={eff.name} >{eff.name}</div>)}</div>
       </div>
     );
   }
