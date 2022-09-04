@@ -8,7 +8,8 @@ export default class ResourceView extends Component {
   }
 
   shouldComponentUpdate(nextProps, nextState) {
-    if (this.props.ResourceShouldUpdate === true) {
+    if (nextProps.resourceShouldUpdate === true) {
+      // TODO treba li mi handler i za ovo?
       if (this.handleResourceUpdated){
       this.handleResourceUpdated();}
       return true;
@@ -27,7 +28,7 @@ export default class ResourceView extends Component {
     console.log("Resources: ", this.props.effects);
     return (
       <div>
-        <div>{this.props.effects.map(eff => <div name={eff.name} >{eff.name}</div>)}</div>
+        <div>{this.props.effects.map(eff => <div key={eff.effect_id}>{eff.effect}</div>)}</div>
       </div>
     );
   }

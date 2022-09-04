@@ -58,14 +58,13 @@ class App extends Component {
             isFetchingEffects:true
         });
         await fetch('http://localhost:8080/effects').then(res=> res.json()).then(data=>{ 
-        console.log("Effects: ", data);
-        // ne postavlja se state, data se ispise, a loaded effects bude prazno
         this.setState({
             resourcesGathered: data.effects,
             isFetchingEffects: false, 
             resourceShouldUpdate: true
             });    
-        });  
+        }); 
+        console.log("Loaded effect: ", this.state.resourcesGathered); 
     }
 
     async calculatePlan(){
@@ -175,7 +174,6 @@ class App extends Component {
                         projectImported={projectImported}
                         actionsImported={actionsImported}
                         onGetEffects={this.getGanttEffects}
-                        effects={resourcesGathered}
                     />
                 </Grid>
                 <Grid item xs={3} className="resource-container">

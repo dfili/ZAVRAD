@@ -118,6 +118,8 @@ export default class Gantt extends Component {
         // });
 
         gantt.attachEvent("onAfterTaskUpdate", taskUpdateHandler);
+        gantt.attachEvent("onAfterTaskDelete", newEffectsHandler);
+        gantt.attachEvent("onAfterTaskAdd", newEffectsHandler);
 
         gantt.attachEvent("onLoadStart", function(){                      
             gantt.message({id:"calculating", type:"warning", text:"Recalculating plan...", expire:300});
@@ -127,7 +129,7 @@ export default class Gantt extends Component {
         //     gantt.updateCollection("actions", actions);
             
         // })
-        gantt.attachEvent("onAfterTaskAdd", newEffectsHandler);
+        
         gantt.attachEvent("onLoadEnd", function(){
             gantt.message.hide("calculating");
         });

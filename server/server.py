@@ -134,7 +134,23 @@ def update_task(task_id):
         effects = request.form["effects"]
 
     snapshot = db.tasks.find_one({'task_id': int(task_id)})
-    fail_handled = snapshot['fail_handled']
+    if snapshot:
+        fail_handled = snapshot['fail_handled']
+        if effects != snapshot['effects']:
+            
+            db.effects.delete_many({"task_id": int(task_id)})
+            
+            upload = []
+            for e in effects.split("; "):
+                if e == "":
+                    break
+                effect_id = get_next_sequence("effect_id")
+                upload.append({"effect_id": effect_id, "effect": e,
+                            "task_id": task_id, "date_acquired": request.form["end_date"]})
+            if len(upload) != 0:
+                db.effects.insert_many(upload)
+    else: 
+        fail_handled = False
 
     query = {"task_id": int(task_id)}
     values = {"$set": {
