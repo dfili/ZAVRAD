@@ -120,6 +120,7 @@ export default class Gantt extends Component {
         gantt.attachEvent("onAfterTaskUpdate", taskUpdateHandler);
         gantt.attachEvent("onAfterTaskDelete", newEffectsHandler);
         gantt.attachEvent("onAfterTaskAdd", newEffectsHandler);
+        gantt.attachEvent("onDataRender", newEffectsHandler);
 
         gantt.attachEvent("onLoadStart", function(){                      
             gantt.message({id:"calculating", type:"warning", text:"Recalculating plan...", expire:300});

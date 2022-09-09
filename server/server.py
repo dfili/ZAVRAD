@@ -941,8 +941,9 @@ def construct_gantt_total_order_plan(partial_plan, initial_action):
         plan_duration_minutes = (end - start).total_seconds() / 60.0
 
         step_action = db.actions.find_one({'action_id': step['step_id']})
+        task_id = get_next_sequence("task_id")
         task = {
-            'task_id': get_next_sequence("task_id"),
+            'task_id': task_id,
             'text': step_action['name'],
             'start_date': str(start_date),
             'end_date': str(end_date),
@@ -957,6 +958,11 @@ def construct_gantt_total_order_plan(partial_plan, initial_action):
             'fail_handled': False
         }
         db.tasks.insert_one(task)
+        for eff in step_action["effects"].split("; "):
+            effect_id = get_next_sequence("effect_id")
+            structure = {"effect_id": effect_id, "effect": eff,
+                      "task_id": task_id, "task_name": step_action['name'], "date_acquired": end_date}
+            db.effects.insert_one(structure);          
         step_added.append(step['step_id'])
 
     for order in final_order:
