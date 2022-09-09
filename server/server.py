@@ -44,11 +44,12 @@ def create_task():
     if task_failed:
         color = 'rgb(245, 66, 87)'
     task_id = int(get_next_sequence("task_id"))
+    task_name = request.form["text"]
     end_date = request.form["end_date"]
     effects = request.form["effects"]
     task = {
         'task_id': task_id,
-        'text': request.form["text"],
+        'text': task_name,
         'start_date': request.form["start_date"],
         'end_date': end_date,
         'action': request.form["action"],
@@ -68,7 +69,7 @@ def create_task():
             break
         effect_id = get_next_sequence("effect_id")
         upload.append({"effect_id": effect_id, "effect": e,
-                      "task_id": task_id, "date_acquired": end_date})
+                      "task_id": task_id, "task_name": task_name, "date_acquired": end_date})
     if len(upload) != 0:
         db.effects.insert_many(upload)
     return jsonify({"action": "inserted", "tid": task_id})
@@ -146,7 +147,7 @@ def update_task(task_id):
                     break
                 effect_id = get_next_sequence("effect_id")
                 upload.append({"effect_id": effect_id, "effect": e,
-                            "task_id": task_id, "date_acquired": request.form["end_date"]})
+                            "task_id": task_id, "task_name": request.form["text"], "date_acquired": request.form["end_date"]})
             if len(upload) != 0:
                 db.effects.insert_many(upload)
     else: 
@@ -299,6 +300,7 @@ def get_effects():
             "effect_id": effect_data["effect_id"],
             "effect": effect_data["effect"],
             "task_id": effect_data["task_id"],
+            "task_name": effect_data["task_name"],
             "date_acquired": effect_data["date_acquired"]
         }
         effects.append(effect)
@@ -428,7 +430,7 @@ def parse_conditions(conditions):
         if condition_object == '':
             continue
         condition_value = condition_object.split(" = ")
-        if len(condition_value) == 0:
+        if len(condition_value) != 2:
             continue
         condition = {
             'name': condition_value[0].strip(),
@@ -968,7 +970,7 @@ def construct_gantt_total_order_plan(partial_plan, initial_action):
             'target': int(task_to['task_id']),
             'type': "0"
         }
-        db.links.insert(link)
+        db.links.insert_one(link)
     return True
 
 

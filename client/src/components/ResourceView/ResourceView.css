@@ -1,0 +1,20 @@
+.resource_container {
+    border-style: solid;
+    border-width: 1px;
+    border-color: #cecece;
+    margin:3px;
+    border-radius: 5px;
+}
+.resource_container_name{
+    font-size: 15px;
+    font-family: Arial;
+}
+.resource_container_time{
+    font-size: 13px;
+    font-weight: 300;
+
+}
+.resource_container_parent{
+    font-size:13px;
+    font-weight: 300;
+}
